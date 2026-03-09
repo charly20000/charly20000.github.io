@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Scraper
+scraper/.env
+__pycache__/
+*.pyc

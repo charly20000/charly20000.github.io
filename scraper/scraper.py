@@ -1,0 +1,694 @@
+"""
+Berliner Arbeitsmarkt-Dashboard – Job-Scraper (Playwright)
+Scrapt Controller-Jobs von StepStone, Indeed, Interamt, berlin.de, bund.de.
+Bewertet jeden Job mit einem Scoring-System (🟢🟡🔴).
+Speichert Ergebnisse in Supabase.
+"""
+
+import os
+import re
+import time
+import logging
+from urllib.parse import quote
+from dataclasses import dataclass, field
+from typing import Optional
+
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+from playwright.sync_api import sync_playwright, Page, Browser
+from supabase import create_client, Client
+
+# ---------------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------------
+load_dotenv()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+
+SEARCH_QUERIES = [
+    "Controller",
+    "Projektcontroller",
+    "Projektcontrolling",
+    "Fördermittel Controller",
+    "Finanzcontroller",
+    "Kostenrechnung Controlling",
+    "Reporting Controller",
+]
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+log = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Scoring-Konfiguration
+# ---------------------------------------------------------------------------
+SCORING_RULES: dict[str, list[tuple[str, int]]] = {
+    "kernkompetenz": [
+        (r"projektcontrolling", 15),
+        (r"projekt[-\s]?controller", 15),
+        (r"fördermittel", 15),
+        (r"zuwendungsrecht", 12),
+        (r"budgetierung", 10),
+        (r"kostenrechnung", 10),
+        (r"kosten-?\s?und\s?leistungsrechnung", 10),
+        (r"verwendungsnachweis", 12),
+        (r"mittelabruf", 10),
+        (r"reporting", 8),
+        (r"berichtswesen", 8),
+        (r"controlling", 5),
+    ],
+    "branche": [
+        (r"öffentlich\w*\s*(auftraggeber|verwaltung|dienst|hand)", 12),
+        (r"bundesministerium|bund\b", 10),
+        (r"ministerium", 10),
+        (r"forschung", 8),
+        (r"wissenschaft", 8),
+        (r"gemeinnützig", 6),
+        (r"verein|verband|stiftung", 5),
+        (r"ngo|non[-\s]?profit", 5),
+    ],
+    "tools": [
+        (r"\bsap\b", 10),
+        (r"sap.{0,5}(co|ps|fi|bw|hana)", 12),
+        (r"\betl\b", 8),
+        (r"\bolap\b", 8),
+        (r"\bbw\b.{0,10}(report|query|analys)", 8),
+        (r"excel.{0,15}(pivot|makro|vba|advanced|fortgeschritten)", 6),
+        (r"power\s?bi|tableau", 5),
+        (r"\bsql\b", 5),
+        (r"python", 5),
+    ],
+    "level": [
+        (r"senior", 10),
+        (r"erfahren\w*", 6),
+        (r"lead|leitung", 8),
+        (r"berufserfahrung.{0,20}\d+\s*jahr", 5),
+    ],
+}
+
+PENALTY_RULES: list[tuple[str, int]] = [
+    (r"\bjunior\b", -20),
+    (r"werkstudent|praktik", -25),
+    (r"100\s*%?\s*remote|full\s*remote|remote\s*only", -15),
+    (r"trainee", -20),
+    (r"berufseinsteiger", -15),
+]
+
+BERLIN_PATTERNS = [
+    r"\bberlin\b",
+    r"\bpotsdam\b",
+    r"\bbrandenburg\b",
+]
+
+
+# ---------------------------------------------------------------------------
+# Datenstruktur
+# ---------------------------------------------------------------------------
+@dataclass
+class Job:
+    source: str
+    title: str
+    company: str
+    location: str
+    url: str
+    description: str = ""
+    salary_raw: str = ""
+    salary_min: Optional[int] = None
+    salary_max: Optional[int] = None
+    posted_date: Optional[str] = None
+    score: int = 0
+    score_label: str = "rot"
+    tags: list[str] = field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Scoring
+# ---------------------------------------------------------------------------
+def score_job(job: Job) -> tuple[int, str, list[str]]:
+    text = f"{job.title} {job.description}".lower()
+    total = 0
+    tags = []
+
+    loc_text = f"{job.location} {text}".lower()
+    is_berlin = any(re.search(p, loc_text) for p in BERLIN_PATTERNS)
+    if not is_berlin:
+        return 0, "rot", ["kein-berlin"]
+
+    for category, rules in SCORING_RULES.items():
+        for pattern, points in rules:
+            if re.search(pattern, text, re.IGNORECASE):
+                total += points
+                tag = re.sub(r"[^a-zäöü0-9]", "", pattern.split("(")[0][:20])
+                tags.append(tag)
+
+    for pattern, points in PENALTY_RULES:
+        if re.search(pattern, text, re.IGNORECASE):
+            total += points
+            tags.append("penalty")
+
+    total = max(0, min(100, total))
+
+    if total >= 50:
+        label = "gruen"
+    elif total >= 25:
+        label = "gelb"
+    else:
+        label = "rot"
+
+    return total, label, tags
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+def parse_salary(raw: str) -> tuple[Optional[int], Optional[int]]:
+    if not raw:
+        return None, None
+    numbers = re.findall(r"(\d[\d.,]*)", raw.replace(".", "").replace(",", "."))
+    nums = []
+    for n in numbers:
+        try:
+            val = int(float(n))
+            if val > 500:
+                nums.append(val)
+        except ValueError:
+            pass
+    if len(nums) >= 2:
+        return min(nums), max(nums)
+    elif len(nums) == 1:
+        return nums[0], nums[0]
+    return None, None
+
+
+def get_page_soup(page: Page, url: str, wait_selector: str = None, wait_ms: int = 3000) -> BeautifulSoup:
+    """Navigiert zu URL, wartet auf JS-Rendering, gibt BeautifulSoup zurück."""
+    try:
+        page.goto(url, timeout=20000, wait_until="domcontentloaded")
+        if wait_selector:
+            try:
+                page.wait_for_selector(wait_selector, timeout=8000)
+            except Exception:
+                pass
+        page.wait_for_timeout(wait_ms)
+        # Cookie-Banner wegklicken falls vorhanden
+        for btn_text in ["Alle akzeptieren", "Accept all", "Akzeptieren", "Alle Cookies akzeptieren"]:
+            try:
+                btn = page.get_by_text(btn_text, exact=False).first
+                if btn and btn.is_visible():
+                    btn.click()
+                    page.wait_for_timeout(500)
+                    break
+            except Exception:
+                pass
+        return BeautifulSoup(page.content(), "html.parser")
+    except Exception as e:
+        log.warning(f"Page load failed: {url} – {e}")
+        return BeautifulSoup("", "html.parser")
+
+
+def fetch_description_pw(page: Page, url: str) -> str:
+    """Lädt Stellenbeschreibung per Playwright."""
+    try:
+        page.goto(url, timeout=15000, wait_until="domcontentloaded")
+        page.wait_for_timeout(2000)
+        # Cookie-Banner
+        for btn_text in ["Alle akzeptieren", "Accept all", "Akzeptieren"]:
+            try:
+                btn = page.get_by_text(btn_text, exact=False).first
+                if btn and btn.is_visible():
+                    btn.click()
+                    page.wait_for_timeout(500)
+                    break
+            except Exception:
+                pass
+        soup = BeautifulSoup(page.content(), "html.parser")
+        # Entferne Navigation/Header/Footer
+        for tag in soup.select("nav, header, footer, script, style"):
+            tag.decompose()
+        selectors = [
+            "div[data-at='job-description']",
+            "div.jobsearch-jobDescriptionText",
+            "div.listing-content",
+            "div.job-description",
+            "div.stellenbeschreibung",
+            "article",
+            "main",
+        ]
+        for sel in selectors:
+            el = soup.select_one(sel)
+            if el and len(el.get_text(strip=True)) > 100:
+                return el.get_text(" ", strip=True)[:5000]
+        return soup.get_text(" ", strip=True)[:3000]
+    except Exception as e:
+        log.debug(f"Description fetch failed: {url} – {e}")
+        return ""
+
+
+# ---------------------------------------------------------------------------
+# Scraper: StepStone (Playwright)
+# ---------------------------------------------------------------------------
+def scrape_stepstone(page: Page, query: str, max_pages: int = 2) -> list[Job]:
+    jobs = []
+    for pg in range(1, max_pages + 1):
+        q_slug = query.lower().replace(" ", "-").replace("ö", "oe").replace("ü", "ue").replace("ä", "ae")
+        url = f"https://www.stepstone.de/jobs/{q_slug}/in-berlin?page={pg}"
+        log.info(f"[StepStone] {url}")
+
+        soup = get_page_soup(page, url, wait_selector="article", wait_ms=4000)
+
+        # Verschiedene Selektoren für Job-Cards
+        articles = soup.select("article[data-at='job-item']")
+        if not articles:
+            articles = soup.select("article")
+        if not articles:
+            articles = soup.select("div[data-testid='job-item']")
+
+        for item in articles:
+            try:
+                # Titel
+                title_tag = item.select_one(
+                    "a[data-at='job-item-title'], h2 a, h3 a, "
+                    "[data-at='job-item-title'], a[href*='/stellenangebote']"
+                )
+                if not title_tag:
+                    continue
+                title = title_tag.get_text(strip=True)
+                if not title or len(title) < 3:
+                    continue
+
+                href = title_tag.get("href", "")
+                if not href:
+                    continue
+                if not href.startswith("http"):
+                    href = "https://www.stepstone.de" + href
+
+                # Firma
+                company_tag = item.select_one(
+                    "[data-at='job-item-company-name'], "
+                    "span[class*='company'], div[class*='company']"
+                )
+                company = company_tag.get_text(strip=True) if company_tag else ""
+
+                # Ort
+                location_tag = item.select_one(
+                    "[data-at='job-item-location'], "
+                    "span[class*='location'], div[class*='location']"
+                )
+                location = location_tag.get_text(strip=True) if location_tag else "Berlin"
+
+                jobs.append(Job(
+                    source="stepstone",
+                    title=title[:300],
+                    company=company[:200],
+                    location=location[:200],
+                    url=href.split("?")[0][:500],
+                ))
+            except Exception as e:
+                log.debug(f"StepStone parse error: {e}")
+
+        time.sleep(1)
+
+    log.info(f"[StepStone] {len(jobs)} Jobs für '{query}'")
+    return jobs
+
+
+# ---------------------------------------------------------------------------
+# Scraper: Indeed (Playwright)
+# ---------------------------------------------------------------------------
+def scrape_indeed(page: Page, query: str, max_pages: int = 2) -> list[Job]:
+    jobs = []
+    for pg in range(max_pages):
+        start = pg * 10
+        url = f"https://de.indeed.com/jobs?q={quote(query)}&l=Berlin&start={start}"
+        log.info(f"[Indeed] {url}")
+
+        soup = get_page_soup(page, url, wait_selector="div.job_seen_beacon", wait_ms=4000)
+
+        cards = soup.select("div.job_seen_beacon")
+        if not cards:
+            cards = soup.select("div[class*='jobCard']")
+        if not cards:
+            cards = soup.select("td.resultContent")
+
+        for card in cards:
+            try:
+                title_tag = card.select_one(
+                    "h2.jobTitle a, a.jcs-JobTitle, "
+                    "h2 a, a[data-jk]"
+                )
+                if not title_tag:
+                    continue
+                title = title_tag.get_text(strip=True)
+                if not title:
+                    continue
+
+                href = title_tag.get("href", "")
+                if href and not href.startswith("http"):
+                    href = "https://de.indeed.com" + href
+
+                company_tag = card.select_one(
+                    "span[data-testid='company-name'], span.companyName, "
+                    "span[class*='company']"
+                )
+                company = company_tag.get_text(strip=True) if company_tag else ""
+
+                location_tag = card.select_one(
+                    "div[data-testid='text-location'], div.companyLocation"
+                )
+                location = location_tag.get_text(strip=True) if location_tag else "Berlin"
+
+                salary_tag = card.select_one(
+                    "div.salary-snippet-container, "
+                    "div[class*='salary'], span[class*='salary']"
+                )
+                salary_raw = salary_tag.get_text(strip=True) if salary_tag else ""
+
+                jobs.append(Job(
+                    source="indeed",
+                    title=title[:300],
+                    company=company[:200],
+                    location=location[:200],
+                    url=href[:500],
+                    salary_raw=salary_raw,
+                ))
+            except Exception as e:
+                log.debug(f"Indeed parse error: {e}")
+
+        time.sleep(2)
+
+    log.info(f"[Indeed] {len(jobs)} Jobs für '{query}'")
+    return jobs
+
+
+# ---------------------------------------------------------------------------
+# Scraper: Interamt (Öffentlicher Dienst)
+# ---------------------------------------------------------------------------
+def scrape_interamt(page: Page, query: str, max_pages: int = 2) -> list[Job]:
+    jobs = []
+    for pg in range(1, max_pages + 1):
+        url = (
+            f"https://www.interamt.de/koop/app/trefferliste"
+            f"?1_FTEXT={quote(query)}"
+            f"&1_EINSATZORT=Berlin"
+            f"&page={pg}"
+        )
+        log.info(f"[Interamt] {url}")
+
+        soup = get_page_soup(page, url, wait_selector="div.stellenangebot", wait_ms=4000)
+
+        cards = soup.select("div.stellenangebot, div.result-item, tr.result-row")
+        if not cards:
+            # Fallback: Links mit Stellenangebot-URLs
+            cards = soup.select("a[href*='/koop/app/stelle/']")
+
+        for card in cards:
+            try:
+                if card.name == "a":
+                    title = card.get_text(strip=True)
+                    href = card.get("href", "")
+                else:
+                    link = card.select_one("a[href*='/stelle/'], a[href*='trefferliste']")
+                    if not link:
+                        link = card.select_one("a")
+                    if not link:
+                        continue
+                    title = link.get_text(strip=True)
+                    href = link.get("href", "")
+
+                if not title or len(title) < 5:
+                    continue
+                if not href:
+                    continue
+                if not href.startswith("http"):
+                    href = "https://www.interamt.de" + href
+
+                company_tag = card.select_one("span.arbeitgeber, td.arbeitgeber, div.employer")
+                company = company_tag.get_text(strip=True) if company_tag else ""
+
+                jobs.append(Job(
+                    source="interamt",
+                    title=title[:300],
+                    company=company[:200],
+                    location="Berlin",
+                    url=href[:500],
+                ))
+            except Exception as e:
+                log.debug(f"Interamt parse error: {e}")
+
+        time.sleep(2)
+
+    log.info(f"[Interamt] {len(jobs)} Jobs für '{query}'")
+    return jobs
+
+
+# ---------------------------------------------------------------------------
+# Scraper: berlin.de Karriere (Land Berlin)
+# ---------------------------------------------------------------------------
+def scrape_berlin_de(page: Page, query: str) -> list[Job]:
+    jobs = []
+    url = f"https://www.berlin.de/karriereportal/stellensuche/?keyword={quote(query)}"
+    log.info(f"[berlin.de] {url}")
+
+    soup = get_page_soup(page, url, wait_selector="div.stellenangebot", wait_ms=5000)
+
+    # Verschiedene mögliche Selektoren
+    cards = soup.select("div.block, li.result-item, tr, div.stellenangebot")
+    links = soup.select("a[href*='stellensuche/']")
+
+    for link in links:
+        try:
+            title = link.get_text(strip=True)
+            if not title or len(title) < 5:
+                continue
+            href = link.get("href", "")
+            if not href:
+                continue
+            if not href.startswith("http"):
+                href = "https://www.berlin.de" + href
+
+            # Filtere Navigation-Links raus
+            if "/stellensuche/?" in href and "detail" not in href.lower():
+                continue
+
+            jobs.append(Job(
+                source="berlin.de",
+                title=title[:300],
+                company="Land Berlin",
+                location="Berlin",
+                url=href[:500],
+            ))
+        except Exception as e:
+            log.debug(f"berlin.de parse error: {e}")
+
+    # Auch generische Ergebnis-Links parsen
+    for card in cards:
+        try:
+            a_tag = card.select_one("a")
+            if not a_tag:
+                continue
+            title = a_tag.get_text(strip=True)
+            href = a_tag.get("href", "")
+            if not title or len(title) < 5 or not href:
+                continue
+            if not href.startswith("http"):
+                href = "https://www.berlin.de" + href
+            if "karriereportal" not in href and "stellen" not in href:
+                continue
+
+            # Duplikat-Check innerhalb der Funktion
+            if any(j.url == href[:500] for j in jobs):
+                continue
+
+            jobs.append(Job(
+                source="berlin.de",
+                title=title[:300],
+                company="Land Berlin",
+                location="Berlin",
+                url=href[:500],
+            ))
+        except Exception:
+            pass
+
+    log.info(f"[berlin.de] {len(jobs)} Jobs für '{query}'")
+    return jobs
+
+
+# ---------------------------------------------------------------------------
+# Scraper: bund.de (Bundesverwaltung)
+# ---------------------------------------------------------------------------
+def scrape_bund(page: Page, query: str) -> list[Job]:
+    jobs = []
+    url = (
+        f"https://www.service.bund.de/IMPORTE/Stellenangebote/editor/"
+        f"Stellenangebote/ergebnis.html"
+        f"?nn=4642046&suchbegriff={quote(query)}"
+        f"&ort=Berlin&umkreis=25"
+    )
+    log.info(f"[bund.de] {url}")
+
+    soup = get_page_soup(page, url, wait_ms=5000)
+
+    # bund.de Ergebnisliste
+    rows = soup.select("div.result-list div.result-item, table.result-list tr, li.result-item")
+    links = soup.select("a[href*='Stellenangebote']")
+
+    for link in links:
+        try:
+            title = link.get_text(strip=True)
+            if not title or len(title) < 5:
+                continue
+            href = link.get("href", "")
+            if not href:
+                continue
+            if not href.startswith("http"):
+                href = "https://www.service.bund.de" + href
+            if "ergebnis" in href or "suche" in href.lower():
+                continue
+
+            jobs.append(Job(
+                source="bund.de",
+                title=title[:300],
+                company="Bundesverwaltung",
+                location="Berlin",
+                url=href[:500],
+            ))
+        except Exception as e:
+            log.debug(f"bund.de parse error: {e}")
+
+    log.info(f"[bund.de] {len(jobs)} Jobs für '{query}'")
+    return jobs
+
+
+# ---------------------------------------------------------------------------
+# Deduplizierung
+# ---------------------------------------------------------------------------
+def deduplicate(jobs: list[Job]) -> list[Job]:
+    seen = set()
+    unique = []
+    for job in jobs:
+        key = job.url.split("?")[0].rstrip("/")
+        if key not in seen:
+            seen.add(key)
+            unique.append(job)
+    log.info(f"Deduplizierung: {len(jobs)} → {len(unique)} Jobs")
+    return unique
+
+
+# ---------------------------------------------------------------------------
+# Supabase Upload
+# ---------------------------------------------------------------------------
+def upload_to_supabase(jobs: list[Job], supabase: Client) -> int:
+    inserted = 0
+    for job in jobs:
+        row = {
+            "source": job.source,
+            "title": job.title,
+            "company": job.company,
+            "location": job.location,
+            "url": job.url,
+            "description": job.description[:5000] if job.description else None,
+            "salary_raw": job.salary_raw or None,
+            "salary_min": job.salary_min,
+            "salary_max": job.salary_max,
+            "posted_date": job.posted_date,
+            "score": job.score,
+            "score_label": job.score_label,
+            "is_relevant": job.score >= 25,
+            "tags": job.tags,
+        }
+        try:
+            supabase.table("jobs").upsert(row, on_conflict="url").execute()
+            inserted += 1
+        except Exception as e:
+            log.warning(f"Supabase insert error: {e}")
+    return inserted
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+def main():
+    log.info("=" * 60)
+    log.info("Berliner Arbeitsmarkt-Dashboard – Scraper Start")
+    log.info("Quellen: StepStone, Indeed, Interamt, berlin.de, bund.de")
+    log.info("=" * 60)
+
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        log.error("SUPABASE_URL oder SUPABASE_SERVICE_KEY fehlt in .env!")
+        return
+
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    all_jobs: list[Job] = []
+
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=True)
+        context = browser.new_context(
+            locale="de-DE",
+            user_agent=(
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            ),
+            viewport={"width": 1280, "height": 800},
+        )
+        page = context.new_page()
+
+        # --- StepStone & Indeed: alle Suchbegriffe ---
+        for query in SEARCH_QUERIES:
+            log.info(f"\n--- Suche: '{query}' ---")
+            all_jobs.extend(scrape_stepstone(page, query, max_pages=2))
+            all_jobs.extend(scrape_indeed(page, query, max_pages=2))
+            time.sleep(1)
+
+        # --- Interamt: spezifischere Queries ---
+        interamt_queries = ["Controller", "Projektcontrolling", "Fördermittel", "Finanzcontrolling"]
+        for query in interamt_queries:
+            all_jobs.extend(scrape_interamt(page, query, max_pages=2))
+            time.sleep(1)
+
+        # --- berlin.de ---
+        berlin_queries = ["Controller", "Controlling", "Projektcontrolling"]
+        for query in berlin_queries:
+            all_jobs.extend(scrape_berlin_de(page, query))
+            time.sleep(1)
+
+        # --- bund.de ---
+        bund_queries = ["Controller", "Projektcontrolling", "Fördermittel"]
+        for query in bund_queries:
+            all_jobs.extend(scrape_bund(page, query))
+            time.sleep(1)
+
+        # Deduplizierung
+        all_jobs = deduplicate(all_jobs)
+        log.info(f"Gesamt: {len(all_jobs)} unique Jobs gefunden")
+
+        # Beschreibungen laden + Scoring
+        for i, job in enumerate(all_jobs):
+            log.info(f"[{i+1}/{len(all_jobs)}] Details: {job.title[:60]}...")
+            job.description = fetch_description_pw(page, job.url)
+            job.salary_min, job.salary_max = parse_salary(job.salary_raw)
+            job.score, job.score_label, job.tags = score_job(job)
+
+            emoji = {"gruen": "🟢", "gelb": "🟡", "rot": "🔴"}.get(job.score_label, "⚪")
+            log.info(f"  {emoji} Score: {job.score} | {job.company} | {job.title[:60]}")
+            time.sleep(0.5)
+
+        browser.close()
+
+    # Upload
+    count = upload_to_supabase(all_jobs, supabase)
+    log.info(f"Upload: {count} Jobs in Supabase")
+
+    # Zusammenfassung
+    gruen = sum(1 for j in all_jobs if j.score_label == "gruen")
+    gelb = sum(1 for j in all_jobs if j.score_label == "gelb")
+    rot = sum(1 for j in all_jobs if j.score_label == "rot")
+    log.info(f"Ergebnis: 🟢 {gruen} | 🟡 {gelb} | 🔴 {rot}")
+    log.info("Fertig!")
+
+
+if __name__ == "__main__":
+    main()

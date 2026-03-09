@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import Dashboard from "./components/Dashboard";
 
-const SECTIONS = ["hero", "profil", "projekte", "skills"];
+const SECTIONS = ["hero", "profil", "projekte", "skills", "dashboard"];
 
 const projects = [
   {
@@ -151,7 +152,7 @@ export default function Portfolio() {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const navLabels = { hero: "Start", profil: "Profil", projekte: "Projekte", skills: "Skills" };
+  const navLabels = { hero: "Start", profil: "Profil", projekte: "Projekte", skills: "Skills", dashboard: "Dashboard" };
 
   return (
     <div style={{
@@ -571,6 +572,9 @@ export default function Portfolio() {
           </div>
         </div>
       </section>
+
+      {/* DASHBOARD */}
+      <Dashboard />
 
       {/* FOOTER */}
       <footer style={{
