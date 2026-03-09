@@ -48,7 +48,7 @@ log = logging.getLogger(__name__)
 SCORING_RULES: dict[str, list[tuple[str, int]]] = {
     "kernkompetenz": [
         (r"projektcontrolling", 15),
-        (r"projekt[-\s]?controller", 15),
+        (r"projekt[-\s]?controll", 15),
         (r"fördermittel", 15),
         (r"zuwendungsrecht", 12),
         (r"budgetierung", 10),
@@ -56,9 +56,12 @@ SCORING_RULES: dict[str, list[tuple[str, int]]] = {
         (r"kosten-?\s?und\s?leistungsrechnung", 10),
         (r"verwendungsnachweis", 12),
         (r"mittelabruf", 10),
+        (r"drittmittel", 10),
         (r"reporting", 8),
         (r"berichtswesen", 8),
-        (r"controlling", 5),
+        (r"controll(ing|er|erin)", 8),
+        (r"finanzcontroll", 10),
+        (r"beteiligungscontroll", 8),
     ],
     "branche": [
         (r"öffentlich\w*\s*(auftraggeber|verwaltung|dienst|hand)", 12),
@@ -69,10 +72,11 @@ SCORING_RULES: dict[str, list[tuple[str, int]]] = {
         (r"gemeinnützig", 6),
         (r"verein|verband|stiftung", 5),
         (r"ngo|non[-\s]?profit", 5),
+        (r"ggmbh|e\.?\s?v\.", 5),
     ],
     "tools": [
         (r"\bsap\b", 10),
-        (r"sap.{0,5}(co|ps|fi|bw|hana)", 12),
+        (r"sap.{0,5}(co|ps|fi|bw|hana|s/?4)", 12),
         (r"\betl\b", 8),
         (r"\bolap\b", 8),
         (r"\bbw\b.{0,10}(report|query|analys)", 8),
@@ -80,27 +84,70 @@ SCORING_RULES: dict[str, list[tuple[str, int]]] = {
         (r"power\s?bi|tableau", 5),
         (r"\bsql\b", 5),
         (r"python", 5),
+        (r"\bexcel\b", 3),
     ],
     "level": [
         (r"senior", 10),
         (r"erfahren\w*", 6),
         (r"lead|leitung", 8),
         (r"berufserfahrung.{0,20}\d+\s*jahr", 5),
+        (r"referent", 5),
     ],
 }
 
 PENALTY_RULES: list[tuple[str, int]] = [
-    (r"\bjunior\b", -20),
-    (r"werkstudent|praktik", -25),
     (r"100\s*%?\s*remote|full\s*remote|remote\s*only", -15),
-    (r"trainee", -20),
     (r"berufseinsteiger", -15),
+]
+
+# Ausschluss-Keywords im Titel → Score 0, komplett ignoriert
+EXCLUSION_KEYWORDS = [
+    # Junior / Einstieg
+    r"\bjunior\b", r"\bwerkstudent\b", r"\bpraktik\w*\b", r"\btrainee\b",
+    # Schule / Bildung
+    r"\blehrer\b", r"\blehrkraft\b", r"\bschule\b", r"\bschul\w*",
+    r"\brektor\b", r"\bkonrektor\b", r"\bschulleitung\b",
+    r"schulrektor", r"sekundarschul", r"grundschul", r"oberschul",
+    r"\bbildung\b", r"\bfortbildung\b", r"fortbildung\w*koordinat",
+    # Soziales / Pflege / Medizin
+    r"\berzieher\b", r"\bpädagog\b", r"\bkita\b",
+    r"\bpflege\b", r"\bkrankenpflege\b",
+    r"\barzt\b", r"\bärztin\b", r"\bmedizin\w*\b",
+    r"\bsozialarbeit", r"\bsozialpädagog",
+    # Facility / Service
+    r"\bhaus(meister|wart|techniker)\b",
+    r"\breinigung\b", r"\bküche\b", r"\bkoch\b",
+    r"\bsekretär\b", r"\bempfang\b",
+    # IT-Security (nicht Controlling)
+    r"informationssicherheit",
+    # Vertrieb / Finanzberatung B2C (kein Controlling)
+    r"fördermittel.{0,10}vertrieb", r"fördermittel.{0,10}berater",
+    r"\bfinanzberater\b", r"\bfinanzberatung\b",
+    r"\bversicherungsmakler\b", r"\bversicherungsberater\b",
+    r"\bimmobilienmakler\b",
+    r"\btop.?closer\b", r"\bcloser\b",
+    r"\bkundendienst\b.*vertrieb", r"\bvertriebsmitarbeiter\b",
+    r"mandantenberater", r"customer.?relationship.?manager",
+    r"\bb2c\b.*finanz", r"finanz.*\bb2c\b",
+]
+
+# Wunscharbeitgeber: Bonus +10
+WUNSCH_ARBEITGEBER = [
+    r"50\s?hertz",
+    r"\bbsr\b|berliner\s+stadtreinigung",
+    r"\bbew\b|berliner\s+energiewerke|berliner\s+stadtwerke",
+    r"\bgewobag\b",
+    r"stadtwerke.*berlin|berliner\s+stadtwerke",
+    r"\bbvg\b|berliner\s+verkehrsbetriebe",
+    r"\bdegewo\b",
+    r"\bhowoge\b",
+    r"\bvivantes\b",
+    r"\bcharité\b",
 ]
 
 BERLIN_PATTERNS = [
     r"\bberlin\b",
     r"\bpotsdam\b",
-    r"\bbrandenburg\b",
 ]
 
 
@@ -128,12 +175,19 @@ class Job:
 # Scoring
 # ---------------------------------------------------------------------------
 def score_job(job: Job) -> tuple[int, str, list[str]]:
+    title_lower = job.title.lower()
     text = f"{job.title} {job.description}".lower()
     total = 0
     tags = []
 
-    loc_text = f"{job.location} {text}".lower()
-    is_berlin = any(re.search(p, loc_text) for p in BERLIN_PATTERNS)
+    # Ausschluss-Keywords im Titel → sofort raus
+    for pattern in EXCLUSION_KEYWORDS:
+        if re.search(pattern, title_lower):
+            return 0, "rot", ["ausschluss"]
+
+    # Standort-Check: Berlin muss im location-Feld stehen
+    loc_lower = job.location.lower()
+    is_berlin = any(re.search(p, loc_lower) for p in BERLIN_PATTERNS)
     if not is_berlin:
         return 0, "rot", ["kein-berlin"]
 
@@ -149,11 +203,19 @@ def score_job(job: Job) -> tuple[int, str, list[str]]:
             total += points
             tags.append("penalty")
 
+    # Wunscharbeitgeber-Bonus
+    company_text = f"{job.company} {job.title}".lower()
+    for pattern in WUNSCH_ARBEITGEBER:
+        if re.search(pattern, company_text, re.IGNORECASE):
+            total += 10
+            tags.append("wunscharbeitgeber")
+            break
+
     total = max(0, min(100, total))
 
-    if total >= 50:
+    if total >= 20:
         label = "gruen"
-    elif total >= 25:
+    elif total >= 10:
         label = "gelb"
     else:
         label = "rot"
