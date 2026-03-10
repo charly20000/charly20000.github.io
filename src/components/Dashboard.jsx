@@ -111,7 +111,8 @@ function isBefristet(job) {
 
 function isTeilzeit(job) {
   const text = `${job.title || ""} ${job.description || ""}`.toLowerCase();
-  return /\bteilzeit\b|\bpart[\s-]?time\b|\b50\s?%\b|\b75\s?%\b/.test(text);
+  if (/\bvollzeit\b|\bfull[\s-]?time\b/.test(text) && !/\bteilzeit\b/.test(text)) return false;
+  return /\bteilzeit\b|\bpart[\s-]?time\b/.test(text);
 }
 
 function isLowSalary(job) {

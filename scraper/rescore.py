@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger(__name__)
 
 # Import scoring config from scraper
-from scraper import score_job, Job
+from scraper import score_job, score_related_job, Job
 
 def main():
     sb = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -37,7 +37,11 @@ def main():
             url=j["url"],
             description=j["description"] or "",
         )
-        new_score, new_label, new_tags = score_job(job)
+        is_verwandt = "verwandt" in (j.get("tags") or [])
+        if is_verwandt:
+            new_score, new_label, new_tags = score_related_job(job)
+        else:
+            new_score, new_label, new_tags = score_job(job)
 
         if new_score != j["score"] or new_label != j["score_label"]:
             sb.table("jobs").update({

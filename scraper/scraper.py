@@ -104,6 +104,9 @@ PENALTY_RULES: list[tuple[str, int]] = [
 EXCLUSION_KEYWORDS = [
     # Junior / Einstieg
     r"\bjunior\b", r"\bwerkstudent\b", r"\bpraktik\w*\b", r"\btrainee\b",
+    r"\bberufseinstieg\b", r"\bberufseinsteiger\w*\b",
+    # Leere / generische Titel (berlin.de)
+    r"^stellenbezeichnung$",
     # Schule / Bildung
     r"\blehrer\w*\b", r"\blehrkraft\b", r"\bschule\b", r"\bschul\w*",
     r"\brektor\w*\b", r"\bkonrektor\w*\b", r"\bschulleiter\w*\b", r"\bschulleitung\b",
