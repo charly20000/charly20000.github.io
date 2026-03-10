@@ -164,12 +164,14 @@ export default function Dashboard() {
   const verwandteJobs = jobs.filter((j) => (j.tags || []).includes("verwandt"));
 
   const filteredJobs = controllerJobs.filter((j) => {
+    if (j.beworben) return false;
     if (filter !== "alle" && j.score_label !== filter) return false;
     if (sourceFilter !== "alle" && j.source !== sourceFilter) return false;
     return true;
   });
 
   const filteredVerwandt = verwandteJobs.filter((j) => {
+    if (j.beworben) return false;
     if (filter !== "alle" && j.score_label !== filter) return false;
     if (sourceFilter !== "alle" && j.source !== sourceFilter) return false;
     return true;
