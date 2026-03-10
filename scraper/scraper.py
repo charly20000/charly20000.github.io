@@ -213,54 +213,6 @@ RELATED_SCORING_RULES: dict[str, list[tuple[str, int]]] = {
 }
 
 
-def score_related_job(job: Job) -> tuple[int, str, list[str]]:
-    """Scoring für verwandte Berufe (Business Analyst, Grants Manager etc.)."""
-    title_lower = job.title.lower()
-    text = f"{job.title} {job.description}".lower()
-    total = 0
-    tags = ["verwandt"]
-
-    for pattern in EXCLUSION_KEYWORDS:
-        if re.search(pattern, title_lower):
-            return 0, "rot", ["verwandt", "ausschluss"]
-
-    loc_lower = job.location.lower()
-    is_berlin = any(re.search(p, loc_lower) for p in BERLIN_PATTERNS)
-    if not is_berlin:
-        return 0, "rot", ["verwandt", "kein-berlin"]
-
-    for category, rules in RELATED_SCORING_RULES.items():
-        for pattern, points in rules:
-            if re.search(pattern, text, re.IGNORECASE):
-                total += points
-                tag = re.sub(r"[^a-zäöü0-9]", "", pattern.split("(")[0][:20])
-                tags.append(tag)
-
-    for pattern, points in PENALTY_RULES:
-        if re.search(pattern, text, re.IGNORECASE):
-            total += points
-            tags.append("penalty")
-
-    # Wunscharbeitgeber-Bonus
-    company_text = f"{job.company} {job.title}".lower()
-    for pattern in WUNSCH_ARBEITGEBER:
-        if re.search(pattern, company_text, re.IGNORECASE):
-            total += 10
-            tags.append("wunscharbeitgeber")
-            break
-
-    total = max(0, min(100, total))
-
-    if total >= 20:
-        label = "gruen"
-    elif total >= 10:
-        label = "gelb"
-    else:
-        label = "rot"
-
-    return total, label, tags
-
-
 # ---------------------------------------------------------------------------
 # Datenstruktur
 # ---------------------------------------------------------------------------
@@ -314,6 +266,53 @@ def score_job(job: Job) -> tuple[int, str, list[str]]:
             tags.append("penalty")
 
     # Wunscharbeitgeber-Bonus
+    company_text = f"{job.company} {job.title}".lower()
+    for pattern in WUNSCH_ARBEITGEBER:
+        if re.search(pattern, company_text, re.IGNORECASE):
+            total += 10
+            tags.append("wunscharbeitgeber")
+            break
+
+    total = max(0, min(100, total))
+
+    if total >= 20:
+        label = "gruen"
+    elif total >= 10:
+        label = "gelb"
+    else:
+        label = "rot"
+
+    return total, label, tags
+
+
+def score_related_job(job: Job) -> tuple[int, str, list[str]]:
+    """Scoring für verwandte Berufe (Business Analyst, Grants Manager etc.)."""
+    title_lower = job.title.lower()
+    text = f"{job.title} {job.description}".lower()
+    total = 0
+    tags = ["verwandt"]
+
+    for pattern in EXCLUSION_KEYWORDS:
+        if re.search(pattern, title_lower):
+            return 0, "rot", ["verwandt", "ausschluss"]
+
+    loc_lower = job.location.lower()
+    is_berlin = any(re.search(p, loc_lower) for p in BERLIN_PATTERNS)
+    if not is_berlin:
+        return 0, "rot", ["verwandt", "kein-berlin"]
+
+    for category, rules in RELATED_SCORING_RULES.items():
+        for pattern, points in rules:
+            if re.search(pattern, text, re.IGNORECASE):
+                total += points
+                tag = re.sub(r"[^a-zäöü0-9]", "", pattern.split("(")[0][:20])
+                tags.append(tag)
+
+    for pattern, points in PENALTY_RULES:
+        if re.search(pattern, text, re.IGNORECASE):
+            total += points
+            tags.append("penalty")
+
     company_text = f"{job.company} {job.title}".lower()
     for pattern in WUNSCH_ARBEITGEBER:
         if re.search(pattern, company_text, re.IGNORECASE):
