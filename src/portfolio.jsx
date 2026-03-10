@@ -15,11 +15,11 @@ const projects = [
     link: "dashboard",
   },
   {
-    title: "Fördermittel-Controlling Pipeline",
+    title: "Fördermittel-Daten-Pipeline",
     status: "Live",
-    tags: ["React", "Zuwendungsrecht", "NKBF 2017", "ANBest-P"],
+    tags: ["ETL", "Zuwendungsrecht", "NKBF 2017", "profi-Online"],
     description:
-      "Projektcontrolling für BMBF/BMWK-Förderprojekte. Finanzierungsplan-Überwachung mit 20%-Schwellenwert-Ampel, Mittelabruf-Tracking und Fristenmanagement nach Zuwendungsrecht.",
+      "ETL-Prozess für BMBF/BMWK-Förderprojekte. Vom Rohdaten-Import (Excel, SAP, profi-Online) über Validierung gegen den Finanzierungsplan bis zur automatisierten Fehlererkennung und Dokumentenausgabe.",
     icon: "⚙️",
     link: "foerdermittel",
   },
