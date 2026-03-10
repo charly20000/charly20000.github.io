@@ -91,6 +91,67 @@ function groupByDate(jobs) {
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
+// --- Helpers ---
+const DAYS_MS = 86400000;
+
+function isNew(job) {
+  if (!job.scraped_at) return false;
+  return (Date.now() - new Date(job.scraped_at).getTime()) < 7 * DAYS_MS;
+}
+
+function isOlderThan30Days(job) {
+  if (!job.scraped_at) return false;
+  return (Date.now() - new Date(job.scraped_at).getTime()) > 30 * DAYS_MS;
+}
+
+function isBefristet(job) {
+  const text = `${job.title || ""} ${job.description || ""}`.toLowerCase();
+  return /\bbefristet\b|\bbefristung\b|\bzeitvertrag\b/.test(text);
+}
+
+function isTeilzeit(job) {
+  const text = `${job.title || ""} ${job.description || ""}`.toLowerCase();
+  return /\bteilzeit\b|\bpart[\s-]?time\b|\b50\s?%\b|\b75\s?%\b/.test(text);
+}
+
+function isLowSalary(job) {
+  if (job.salary_max && job.salary_max > 0 && job.salary_max < 60000) return true;
+  if (job.salary_min && job.salary_min > 0 && job.salary_max && job.salary_max < 60000) return true;
+  return false;
+}
+
+function deduplicateJobs(jobList) {
+  const seen = new Set();
+  return jobList.filter((j) => {
+    const key = `${(j.title || "").toLowerCase().trim()}|||${(j.company || "").toLowerCase().trim()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+const badgeStyle = (color, bg) => ({
+  fontSize: 9,
+  fontFamily: "'Space Mono', monospace",
+  fontWeight: 600,
+  color,
+  background: bg,
+  padding: "2px 6px",
+  letterSpacing: "0.03em",
+  whiteSpace: "nowrap",
+});
+
+function JobBadges({ job }) {
+  return (
+    <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 3 }}>
+      {isNew(job) && <span style={badgeStyle("#0066cc", "rgba(0,102,204,0.08)")}>NEW</span>}
+      {isLowSalary(job) && <span style={badgeStyle("#cc3333", "rgba(204,51,51,0.08)")}>{"< 60K"}</span>}
+      {isBefristet(job) && <span style={badgeStyle("#cc7700", "rgba(204,119,0,0.08)")}>BEFRISTET</span>}
+      {isTeilzeit(job) && <span style={badgeStyle("#7700cc", "rgba(119,0,204,0.08)")}>TEILZEIT</span>}
+    </div>
+  );
+}
+
 // --- Shared styles ---
 const monoLabel = {
   fontFamily: "'Space Mono', monospace",
@@ -146,6 +207,20 @@ export default function Dashboard() {
     setUpdatingId(null);
   }
 
+  async function markNichtRelevant(jobId) {
+    setUpdatingId(jobId);
+    const { error } = await supabase
+      .from("jobs")
+      .update({ nicht_relevant: true })
+      .eq("id", jobId);
+    if (!error) {
+      setJobs((prev) =>
+        prev.map((j) => (j.id === jobId ? { ...j, nicht_relevant: true } : j))
+      );
+    }
+    setUpdatingId(null);
+  }
+
   async function updateStatus(jobId, newStatus) {
     setUpdatingId(jobId);
     const { error } = await supabase
@@ -160,8 +235,10 @@ export default function Dashboard() {
     setUpdatingId(null);
   }
 
-  const controllerJobs = jobs.filter((j) => !(j.tags || []).includes("verwandt"));
-  const verwandteJobs = jobs.filter((j) => (j.tags || []).includes("verwandt"));
+  const activeJobs = jobs.filter((j) => !j.nicht_relevant && !isOlderThan30Days(j));
+  const controllerJobs = deduplicateJobs(activeJobs.filter((j) => !(j.tags || []).includes("verwandt")));
+  const verwandteJobs = deduplicateJobs(activeJobs.filter((j) => (j.tags || []).includes("verwandt")));
+  const ausgeblendetJobs = jobs.filter((j) => j.nicht_relevant);
 
   const filteredJobs = controllerJobs.filter((j) => {
     if (j.beworben) return false;
@@ -278,6 +355,7 @@ export default function Dashboard() {
               { key: "jobs", label: "Controller-Jobs", count: controllerJobs.length },
               { key: "verwandt", label: "Verwandte Berufe", count: verwandteJobs.length },
               { key: "beworben", label: "Beworben", count: beworbenJobs.length },
+              { key: "ausgeblendet", label: "Ausgeblendet", count: ausgeblendetJobs.length },
             ].map((t) => (
               <button
                 key={t.key}
@@ -368,12 +446,12 @@ export default function Dashboard() {
                     key={job.id}
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "36px 1fr 120px 80px 90px",
+                      gridTemplateColumns: "36px 1fr 120px auto",
                       alignItems: "center",
                       gap: 12,
                       padding: "14px 16px",
-                      border: `1px solid ${job.beworben ? "rgba(0,102,204,0.2)" : "#eee"}`,
-                      background: job.beworben ? "rgba(0,102,204,0.02)" : "#fff",
+                      border: "1px solid #eee",
+                      background: "#fff",
                       transition: "border-color 0.2s, box-shadow 0.2s",
                     }}
                     onMouseEnter={(e) => {
@@ -381,7 +459,7 @@ export default function Dashboard() {
                       e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.04)";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = job.beworben ? "rgba(0,102,204,0.2)" : "#eee";
+                      e.currentTarget.style.borderColor = "#eee";
                       e.currentTarget.style.boxShadow = "none";
                     }}
                   >
@@ -393,7 +471,7 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    {/* Titel + Firma */}
+                    {/* Titel + Firma + Badges */}
                     <a
                       href={job.url}
                       target="_blank"
@@ -406,6 +484,7 @@ export default function Dashboard() {
                       <div style={{ fontSize: 12, color: "#999", marginTop: 2 }}>
                         {job.company} · {job.location}
                       </div>
+                      <JobBadges job={job} />
                     </a>
 
                     {/* Quelle */}
@@ -413,25 +492,8 @@ export default function Dashboard() {
                       {SOURCE_LABELS[job.source] || job.source}
                     </div>
 
-                    {/* Status Badge */}
-                    {job.beworben && (
-                      <div style={{
-                        fontSize: 10,
-                        fontFamily: "'Space Mono', monospace",
-                        fontWeight: 600,
-                        color: STATUS_CONFIG[job.status]?.color || "#999",
-                        background: STATUS_CONFIG[job.status]?.bg || "#f5f5f5",
-                        padding: "3px 8px",
-                        textAlign: "center",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}>
-                        {STATUS_CONFIG[job.status]?.label || job.status}
-                      </div>
-                    )}
-
-                    {/* Bewerben Button */}
-                    {!job.beworben ? (
+                    {/* Buttons */}
+                    <div style={{ display: "flex", gap: 6 }}>
                       <button
                         onClick={() => markBeworben(job.id)}
                         disabled={updatingId === job.id}
@@ -453,9 +515,26 @@ export default function Dashboard() {
                       >
                         {updatingId === job.id ? "..." : "Bewerben"}
                       </button>
-                    ) : (
-                      <div style={{ width: 1 }} />
-                    )}
+                      <button
+                        onClick={() => markNichtRelevant(job.id)}
+                        disabled={updatingId === job.id}
+                        title="Nicht relevant"
+                        style={{
+                          background: "#fff",
+                          color: "#999",
+                          border: "1px solid #eee",
+                          padding: "6px 8px",
+                          fontSize: 11,
+                          cursor: updatingId === job.id ? "wait" : "pointer",
+                          transition: "color 0.2s, border-color 0.2s",
+                          whiteSpace: "nowrap",
+                        }}
+                        onMouseEnter={(e) => { e.target.style.color = "#cc3333"; e.target.style.borderColor = "#cc3333"; }}
+                        onMouseLeave={(e) => { e.target.style.color = "#999"; e.target.style.borderColor = "#eee"; }}
+                      >
+                        {"\u2715"}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -521,12 +600,12 @@ export default function Dashboard() {
                     key={job.id}
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "36px 1fr 120px 80px 90px",
+                      gridTemplateColumns: "36px 1fr 120px auto",
                       alignItems: "center",
                       gap: 12,
                       padding: "14px 16px",
-                      border: `1px solid ${job.beworben ? "rgba(0,102,204,0.2)" : "#eee"}`,
-                      background: job.beworben ? "rgba(0,102,204,0.02)" : "#fff",
+                      border: "1px solid #eee",
+                      background: "#fff",
                       transition: "border-color 0.2s, box-shadow 0.2s",
                     }}
                     onMouseEnter={(e) => {
@@ -534,7 +613,7 @@ export default function Dashboard() {
                       e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.04)";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = job.beworben ? "rgba(0,102,204,0.2)" : "#eee";
+                      e.currentTarget.style.borderColor = "#eee";
                       e.currentTarget.style.boxShadow = "none";
                     }}
                   >
@@ -556,26 +635,12 @@ export default function Dashboard() {
                       <div style={{ fontSize: 12, color: "#999", marginTop: 2 }}>
                         {job.company} · {job.location}
                       </div>
+                      <JobBadges job={job} />
                     </a>
                     <div style={{ fontSize: 10, fontFamily: "'Space Mono', monospace", color: "#bbb", textAlign: "center", border: "1px solid #f0f0f0", padding: "2px 6px" }}>
                       {SOURCE_LABELS[job.source] || job.source}
                     </div>
-                    {job.beworben && (
-                      <div style={{
-                        fontSize: 10,
-                        fontFamily: "'Space Mono', monospace",
-                        fontWeight: 600,
-                        color: STATUS_CONFIG[job.status]?.color || "#999",
-                        background: STATUS_CONFIG[job.status]?.bg || "#f5f5f5",
-                        padding: "3px 8px",
-                        textAlign: "center",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}>
-                        {STATUS_CONFIG[job.status]?.label || job.status}
-                      </div>
-                    )}
-                    {!job.beworben ? (
+                    <div style={{ display: "flex", gap: 6 }}>
                       <button
                         onClick={() => markBeworben(job.id)}
                         disabled={updatingId === job.id}
@@ -597,9 +662,26 @@ export default function Dashboard() {
                       >
                         {updatingId === job.id ? "..." : "Bewerben"}
                       </button>
-                    ) : (
-                      <div style={{ width: 1 }} />
-                    )}
+                      <button
+                        onClick={() => markNichtRelevant(job.id)}
+                        disabled={updatingId === job.id}
+                        title="Nicht relevant"
+                        style={{
+                          background: "#fff",
+                          color: "#999",
+                          border: "1px solid #eee",
+                          padding: "6px 8px",
+                          fontSize: 11,
+                          cursor: updatingId === job.id ? "wait" : "pointer",
+                          transition: "color 0.2s, border-color 0.2s",
+                          whiteSpace: "nowrap",
+                        }}
+                        onMouseEnter={(e) => { e.target.style.color = "#cc3333"; e.target.style.borderColor = "#cc3333"; }}
+                        onMouseLeave={(e) => { e.target.style.color = "#999"; e.target.style.borderColor = "#eee"; }}
+                      >
+                        {"\u2715"}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -718,6 +800,89 @@ export default function Dashboard() {
                           <option value="einladung">Einladung</option>
                           <option value="absage">Absage</option>
                         </select>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+          {/* Tab: Ausgeblendet */}
+          {tab === "ausgeblendet" && (
+            <>
+              {ausgeblendetJobs.length === 0 ? (
+                <div style={{ textAlign: "center", padding: 60, color: "#aaa" }}>
+                  <div style={{ fontSize: 32, marginBottom: 12 }}>{"\u2715"}</div>
+                  <div style={{ fontSize: 14 }}>Keine ausgeblendeten Jobs.</div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ ...monoLabel, fontSize: 10, marginBottom: 12 }}>
+                    {ausgeblendetJobs.length} ausgeblendet
+                  </div>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {ausgeblendetJobs.map((job) => (
+                      <div
+                        key={job.id}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "36px 1fr 120px auto",
+                          alignItems: "center",
+                          gap: 12,
+                          padding: "14px 16px",
+                          border: "1px solid #f0f0f0",
+                          background: "#fafafa",
+                        }}
+                      >
+                        <div style={{ textAlign: "center" }}>
+                          <div style={{ fontSize: 16 }}>{SCORE_EMOJI[job.score_label] || "\u26AA"}</div>
+                          <div style={{ fontSize: 9, fontFamily: "'Space Mono', monospace", color: SCORE_COLOR[job.score_label] || "#999", fontWeight: 700 }}>
+                            {job.score}
+                          </div>
+                        </div>
+                        <a href={job.url} target="_blank" rel="noopener noreferrer" style={{ minWidth: 0, textDecoration: "none", color: "inherit" }}>
+                          <div style={{ fontSize: 14, fontWeight: 500, color: "#888", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {job.title}
+                          </div>
+                          <div style={{ fontSize: 12, color: "#bbb", marginTop: 2 }}>
+                            {job.company} · {job.location}
+                          </div>
+                        </a>
+                        <div style={{ fontSize: 10, fontFamily: "'Space Mono', monospace", color: "#ccc", textAlign: "center", border: "1px solid #f0f0f0", padding: "2px 6px" }}>
+                          {SOURCE_LABELS[job.source] || job.source}
+                        </div>
+                        <button
+                          onClick={async () => {
+                            setUpdatingId(job.id);
+                            const { error } = await supabase
+                              .from("jobs")
+                              .update({ nicht_relevant: false })
+                              .eq("id", job.id);
+                            if (!error) {
+                              setJobs((prev) =>
+                                prev.map((j) => (j.id === job.id ? { ...j, nicht_relevant: false } : j))
+                              );
+                            }
+                            setUpdatingId(null);
+                          }}
+                          disabled={updatingId === job.id}
+                          style={{
+                            background: "#fff",
+                            color: "#008c46",
+                            border: "1px solid #008c46",
+                            padding: "6px 12px",
+                            fontSize: 11,
+                            fontFamily: "'DM Sans', sans-serif",
+                            fontWeight: 600,
+                            cursor: updatingId === job.id ? "wait" : "pointer",
+                            transition: "all 0.2s",
+                            whiteSpace: "nowrap",
+                          }}
+                          onMouseEnter={(e) => { e.target.style.background = "#008c46"; e.target.style.color = "#fff"; }}
+                          onMouseLeave={(e) => { e.target.style.background = "#fff"; e.target.style.color = "#008c46"; }}
+                        >
+                          {updatingId === job.id ? "..." : "Wiederherstellen"}
+                        </button>
                       </div>
                     ))}
                   </div>
