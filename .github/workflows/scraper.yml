@@ -1,9 +1,9 @@
-name: Daily Job Scraper
+name: Weekly Job Scraper
 
 on:
   schedule:
-    # 6:00 UTC = 7:00 CET (Winter) / 8:00 CEST (Sommer)
-    - cron: '0 6 * * *'
+    # Jeden Montag 6:00 UTC = 7:00 CET
+    - cron: '0 6 * * 1'
   workflow_dispatch:
 
 jobs:
