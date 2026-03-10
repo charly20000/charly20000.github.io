@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import Dashboard from "./components/Dashboard";
+import FoerdermittelPipeline from "./components/FoerdermittelPipeline";
 
-const SECTIONS = ["hero", "profil", "projekte", "skills", "dashboard"];
+const SECTIONS = ["hero", "profil", "projekte", "skills", "dashboard", "foerdermittel"];
 
 const projects = [
   {
@@ -15,11 +16,12 @@ const projects = [
   },
   {
     title: "Fördermittel-Controlling Pipeline",
-    status: "Konzept",
-    tags: ["Python", "SQL", "ETL", "Automatisierung"],
+    status: "Live",
+    tags: ["React", "Zuwendungsrecht", "NKBF 2017", "ANBest-P"],
     description:
-      "Automatisierte Datenverarbeitung und Reporting für Fördermittelprojekte. Von der Datenextraktion bis zum fertigen Bericht.",
+      "Projektcontrolling für BMBF/BMWK-Förderprojekte. Finanzierungsplan-Überwachung mit 20%-Schwellenwert-Ampel, Mittelabruf-Tracking und Fristenmanagement nach Zuwendungsrecht.",
     icon: "⚙️",
+    link: "foerdermittel",
   },
   {
     title: "Portfolio-Optimierung mit Python",
@@ -153,7 +155,7 @@ export default function Portfolio() {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const navLabels = { hero: "Start", profil: "Profil", projekte: "Projekte", skills: "Skills", dashboard: "Dashboard" };
+  const navLabels = { hero: "Start", profil: "Profil", projekte: "Projekte", skills: "Skills", dashboard: "Dashboard", foerdermittel: "Fördermittel" };
 
   return (
     <div style={{
@@ -577,6 +579,9 @@ export default function Portfolio() {
 
       {/* DASHBOARD */}
       <Dashboard />
+
+      {/* FÖRDERMITTEL-PIPELINE */}
+      <FoerdermittelPipeline />
 
       {/* FOOTER */}
       <footer style={{
