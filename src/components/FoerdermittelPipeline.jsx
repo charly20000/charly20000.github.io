@@ -1,12 +1,90 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  Cell, ReferenceLine,
+  Cell, LineChart, Line, CartesianGrid, Legend,
+  PieChart, Pie,
 } from "recharts";
 
 // ---------------------------------------------------------------------------
 // Demo-Daten: Realistische BMBF/BMWi Förderprojekte
 // ---------------------------------------------------------------------------
+
+// Verbundpartner für NuMoBB (Projekt 3)
+const NUMOBB_PARTNERS = [
+  {
+    id: "p1",
+    name: "Fraunhofer IZM",
+    typ: "Forschungseinrichtung",
+    rolle: "Verbundkoordinator",
+    basis: "Kostenbasis (AZK)",
+    gemeinkosten: "110%",
+    foerderquote: 100,
+    bewilligt: 980000,
+    finanzierungsplan: [
+      { kategorie: "Personaleinzelkosten", soll: 420000, ist: 365000 },
+      { kategorie: "Gemeinkosten (110%)", soll: 462000, ist: 401500 },
+      { kategorie: "Sachkosten", soll: 38000, ist: 29000 },
+      { kategorie: "Reisekosten", soll: 20000, ist: 17500 },
+      { kategorie: "Unteraufträge", soll: 40000, ist: 35000 },
+    ],
+    abrufStatus: "im-plan",
+  },
+  {
+    id: "p2",
+    name: "TU Berlin — Fachgebiet Verkehrsplanung",
+    typ: "Universität",
+    rolle: "Partner",
+    basis: "Ausgabenbasis (AZA)",
+    gemeinkosten: "Programmpauschale 20%",
+    foerderquote: 100,
+    bewilligt: 720000,
+    finanzierungsplan: [
+      { kategorie: "Personalausgaben", soll: 480000, ist: 395000 },
+      { kategorie: "Programmpauschale (20%)", soll: 96000, ist: 79000 },
+      { kategorie: "Sachausgaben", soll: 54000, ist: 48000 },
+      { kategorie: "Reiseausgaben", soll: 30000, ist: 22000 },
+      { kategorie: "Investitionen", soll: 60000, ist: 58000 },
+    ],
+    abrufStatus: "im-plan",
+  },
+  {
+    id: "p3",
+    name: "MobilityTech GmbH",
+    typ: "KMU / Startup",
+    rolle: "Partner",
+    basis: "Kostenbasis (AZK)",
+    gemeinkosten: "100%",
+    foerderquote: 80,
+    bewilligt: 640000,
+    finanzierungsplan: [
+      { kategorie: "Personaleinzelkosten", soll: 280000, ist: 255000 },
+      { kategorie: "Gemeinkosten (100%)", soll: 280000, ist: 255000 },
+      { kategorie: "Sachkosten", soll: 30000, ist: 42000 },
+      { kategorie: "Reisekosten", soll: 10000, ist: 6500 },
+      { kategorie: "Unteraufträge", soll: 40000, ist: 52000 },
+    ],
+    abrufStatus: "warnung",
+  },
+  {
+    id: "p4",
+    name: "Siemens Mobility GmbH",
+    typ: "Großunternehmen",
+    rolle: "Assoziierter Partner",
+    basis: "Kostenbasis (AZK)",
+    gemeinkosten: "120%",
+    foerderquote: 50,
+    bewilligt: 460000,
+    finanzierungsplan: [
+      { kategorie: "Personaleinzelkosten", soll: 180000, ist: 148000 },
+      { kategorie: "Gemeinkosten (120%)", soll: 216000, ist: 177600 },
+      { kategorie: "Sachkosten", soll: 24000, ist: 18000 },
+      { kategorie: "Reisekosten", soll: 10000, ist: 7400 },
+      { kategorie: "Unteraufträge", soll: 30000, ist: 25000 },
+    ],
+    abrufStatus: "im-plan",
+  },
+];
+
 const DEMO_PROJECTS = [
   {
     id: 1,
@@ -89,8 +167,10 @@ const DEMO_PROJECTS = [
     foerderkennzeichen: "03SF0648",
     foerdergeber: "BMBF",
     projekttraeger: "VDI/VDE-IT",
-    basis: "Kostenbasis (AZK)",
-    nebenbestimmungen: "NKBF 2017",
+    basis: "Verbundprojekt (AZK/AZA gemischt)",
+    nebenbestimmungen: "NKBF 2017 / ANBest-P",
+    isVerbund: true,
+    partners: NUMOBB_PARTNERS,
     laufzeit: { start: "2023-04-01", end: "2026-03-31" },
     bewilligt: 2800000,
     foerderquote: 75,
@@ -125,10 +205,27 @@ const DEMO_PROJECTS = [
   },
 ];
 
+// Demo-Belegliste (wie aus Excel importiert)
+const DEMO_BELEGLISTE = [
+  { nr: "BL-2025-001", datum: "2025-01-15", kostenart: "Personaleinzelkosten", beschreibung: "Dr. Müller — 160h Projektarbeit Jan 2025", netto: 12800, mwst: 0, brutto: 12800, ap: "AP 2.1" },
+  { nr: "BL-2025-002", datum: "2025-01-22", kostenart: "Sachkosten", beschreibung: "GPU-Server Nvidia A100 (Anteil Projekt)", netto: 4200, mwst: 798, brutto: 4998, ap: "AP 1.3" },
+  { nr: "BL-2025-003", datum: "2025-01-28", kostenart: "Reisekosten", beschreibung: "Projekttreffen München — DB + Hotel 2 Nächte", netto: 487.50, mwst: 0, brutto: 487.50, ap: "AP 5.0" },
+  { nr: "BL-2025-004", datum: "2025-02-01", kostenart: "Personaleinzelkosten", beschreibung: "M.Sc. Schmidt — 140h Datenanalyse Feb 2025", netto: 8400, mwst: 0, brutto: 8400, ap: "AP 2.2" },
+  { nr: "BL-2025-005", datum: "2025-02-10", kostenart: "Unteraufträge", beschreibung: "Fraunhofer IPT — Messprotokoll Sensorsysteme", netto: 15000, mwst: 2850, brutto: 17850, ap: "AP 3.1" },
+  { nr: "BL-2025-006", datum: "2025-02-15", kostenart: "Personaleinzelkosten", beschreibung: "Dr. Müller — 152h Projektarbeit Feb 2025", netto: 12160, mwst: 0, brutto: 12160, ap: "AP 2.1" },
+  { nr: "BL-2025-007", datum: "2025-02-20", kostenart: "Sachkosten", beschreibung: "Softwarelizenz MATLAB (Jahresanteil)", netto: 1850, mwst: 351.50, brutto: 2201.50, ap: "AP 1.2" },
+  { nr: "BL-2025-008", datum: "2025-03-01", kostenart: "Personaleinzelkosten", beschreibung: "M.Sc. Schmidt — 168h Modelltraining März 2025", netto: 10080, mwst: 0, brutto: 10080, ap: "AP 2.3" },
+  { nr: "BL-2025-009", datum: "2025-03-05", kostenart: "Reisekosten", beschreibung: "Konferenz ML4Industry Berlin — Teilnahmegebühr", netto: 450, mwst: 85.50, brutto: 535.50, ap: "AP 5.0" },
+  { nr: "BL-2025-010", datum: "2025-03-12", kostenart: "Sachkosten", beschreibung: "Sensoren + Messtechnik (10 Stück)", netto: 3200, mwst: 608, brutto: 3808, ap: "AP 3.2" },
+  { nr: "BL-2025-011", datum: "2025-03-15", kostenart: "Personaleinzelkosten", beschreibung: "Dr. Müller — 144h Projektarbeit März 2025", netto: 11520, mwst: 0, brutto: 11520, ap: "AP 2.1" },
+  { nr: "BL-2025-012", datum: "2025-03-20", kostenart: "Unteraufträge", beschreibung: "Cloud Computing AWS — Q1/2025 Abrechnung", netto: 6800, mwst: 1292, brutto: 8092, ap: "AP 1.4" },
+];
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 const fmt = (n) => new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
+const fmtExact = (n) => new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", minimumFractionDigits: 2 }).format(n);
 const fmtPct = (n) => `${n > 0 ? "+" : ""}${n.toFixed(1)}%`;
 const daysBetween = (a, b) => Math.ceil((new Date(b) - new Date(a)) / 86400000);
 const today = new Date().toISOString().split("T")[0];
@@ -145,7 +242,7 @@ function budgetBurnRate(p) {
 }
 
 function schwellenwertStatus(soll, ist) {
-  if (soll === 0) return "ok";
+  if (soll === 0) return "gruen";
   const abw = ((ist - soll) / soll) * 100;
   if (abw > 20) return "rot";
   if (abw > 15) return "gelb";
@@ -163,6 +260,14 @@ function fristAmpel(frist) {
   if (days <= 30) return "dringend";
   if (days <= 90) return "bald";
   return "ok";
+}
+
+function partnerIst(partner) {
+  return partner.finanzierungsplan.reduce((s, k) => s + k.ist, 0);
+}
+
+function partnerSoll(partner) {
+  return partner.finanzierungsplan.reduce((s, k) => s + k.soll, 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -183,14 +288,9 @@ const cardStyle = {
 };
 
 const ampelColors = {
-  gruen: "#008c46",
-  gelb: "#cc7700",
-  rot: "#cc3333",
-  ok: "#008c46",
-  bald: "#cc7700",
-  dringend: "#cc3333",
-  ueberfaellig: "#990000",
-  done: "#999",
+  gruen: "#008c46", gelb: "#cc7700", rot: "#cc3333",
+  ok: "#008c46", bald: "#cc7700", dringend: "#cc3333",
+  ueberfaellig: "#990000", done: "#999",
 };
 
 const ampelBg = {
@@ -198,6 +298,8 @@ const ampelBg = {
   gelb: "rgba(204,119,0,0.06)",
   rot: "rgba(204,51,51,0.06)",
 };
+
+const PARTNER_COLORS = ["#008c46", "#0066cc", "#cc7700", "#7700cc"];
 
 // ---------------------------------------------------------------------------
 // Sub-Components
@@ -226,12 +328,18 @@ function ProjectCard({ project, selected, onClick }) {
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#222", marginBottom: 2 }}>{project.kuerzel}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "#222" }}>{project.kuerzel}</span>
+            {project.isVerbund && (
+              <span style={{ ...monoLabel, fontSize: 8, color: "#0066cc", background: "rgba(0,102,204,0.06)", padding: "2px 6px" }}>
+                VERBUND
+              </span>
+            )}
+          </div>
           <div style={{ fontSize: 11, color: "#999" }}>{project.foerdergeber} · {project.projekttraeger}</div>
         </div>
         <div style={{
-          ...monoLabel,
-          fontSize: 9,
+          ...monoLabel, fontSize: 9,
           color: hasWarning ? "#cc3333" : "#008c46",
           background: hasWarning ? "rgba(204,51,51,0.06)" : "rgba(0,140,70,0.06)",
           padding: "3px 8px",
@@ -242,36 +350,26 @@ function ProjectCard({ project, selected, onClick }) {
 
       <div style={{ fontSize: 12, color: "#666", marginBottom: 12 }}>{project.name}</div>
 
-      {/* Budget */}
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#999", marginBottom: 4 }}>
         <span>{fmt(totalIst)} von {fmt(project.bewilligt)}</span>
         <span style={{ fontFamily: "'Space Mono', monospace", color: burn > 90 ? "#cc3333" : "#666" }}>{burn.toFixed(0)}%</span>
       </div>
       <div style={{ height: 4, background: "#f0f0f0", borderRadius: 2, marginBottom: 12 }}>
         <div style={{
-          height: "100%",
-          width: `${Math.min(100, burn)}%`,
+          height: "100%", width: `${Math.min(100, burn)}%`,
           background: burn > 90 ? "#cc3333" : burn > 70 ? "#cc7700" : "#008c46",
-          borderRadius: 2,
-          transition: "width 0.6s ease",
+          borderRadius: 2, transition: "width 0.6s ease",
         }} />
       </div>
 
-      {/* Laufzeit */}
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#bbb", marginBottom: 4 }}>
         <span>Laufzeit</span>
         <span style={{ fontFamily: "'Space Mono', monospace" }}>{progress.toFixed(0)}%</span>
       </div>
       <div style={{ height: 3, background: "#f0f0f0", borderRadius: 2, marginBottom: 10 }}>
-        <div style={{
-          height: "100%",
-          width: `${progress}%`,
-          background: "#ddd",
-          borderRadius: 2,
-        }} />
+        <div style={{ height: "100%", width: `${progress}%`, background: "#ddd", borderRadius: 2 }} />
       </div>
 
-      {/* Nächste Frist */}
       {nextFrist && (
         <div style={{ fontSize: 10, color: ampelColors[fristAmpel(nextFrist)], fontFamily: "'Space Mono', monospace" }}>
           {daysUntil(nextFrist.datum) > 0
@@ -287,10 +385,14 @@ function FinanzierungsplanView({ project }) {
   const chartData = project.finanzierungsplan.map((k) => {
     const abw = k.soll > 0 ? ((k.ist - k.soll) / k.soll) * 100 : 0;
     return {
-      name: k.kategorie.replace("Personaleinzelkosten", "Personal").replace("Gemeinkosten (120%)", "Gemeinkosten").replace("Personalausgaben", "Personal").replace("Sachausgaben", "Sachkosten").replace("Reiseausgaben", "Reisekosten").replace("Gegenstände", "Gegenstände"),
-      Soll: k.soll,
-      Ist: k.ist,
-      abweichung: abw,
+      name: k.kategorie
+        .replace("Personaleinzelkosten", "Personal")
+        .replace(/Gemeinkosten \(\d+%\)/, "Gemeinkosten")
+        .replace("Personalausgaben", "Personal")
+        .replace("Sachausgaben", "Sachkosten")
+        .replace("Reiseausgaben", "Reisekosten")
+        .replace(/Programmpauschale \(\d+%\)/, "Pauschale"),
+      Soll: k.soll, Ist: k.ist, abweichung: abw,
       status: schwellenwertStatus(k.soll, k.ist),
     };
   });
@@ -304,16 +406,11 @@ function FinanzierungsplanView({ project }) {
         Finanzierungsplan Soll/Ist · {project.nebenbestimmungen}
       </div>
 
-      {/* 20%-Schwellenwert Warnung */}
       {project.finanzierungsplan.some((k) => schwellenwertStatus(k.soll, k.ist) === "rot") && (
         <div style={{
-          padding: "12px 16px",
-          marginBottom: 20,
-          background: "rgba(204,51,51,0.06)",
-          border: "1px solid rgba(204,51,51,0.15)",
-          fontSize: 12,
-          color: "#cc3333",
-          fontWeight: 500,
+          padding: "12px 16px", marginBottom: 20,
+          background: "rgba(204,51,51,0.06)", border: "1px solid rgba(204,51,51,0.15)",
+          fontSize: 12, color: "#cc3333", fontWeight: 500,
         }}>
           20%-Schwellenwert überschritten — Änderungsantrag beim Projektträger erforderlich (ANBest-P Nr. 1.2)
         </div>
@@ -322,13 +419,9 @@ function FinanzierungsplanView({ project }) {
       {/* Tabelle */}
       <div style={{ marginBottom: 24 }}>
         <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 100px 100px 80px 60px",
-          gap: 8,
-          padding: "8px 12px",
-          borderBottom: "1px solid #eee",
-          ...monoLabel,
-          fontSize: 9,
+          display: "grid", gridTemplateColumns: "1fr 100px 100px 80px 60px",
+          gap: 8, padding: "8px 12px", borderBottom: "1px solid #eee",
+          ...monoLabel, fontSize: 9,
         }}>
           <span>Kostenart</span>
           <span style={{ textAlign: "right" }}>Soll</span>
@@ -341,24 +434,14 @@ function FinanzierungsplanView({ project }) {
           const status = schwellenwertStatus(k.soll, k.ist);
           return (
             <div key={i} style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 100px 100px 80px 60px",
-              gap: 8,
-              padding: "10px 12px",
-              borderBottom: "1px solid #f5f5f5",
-              fontSize: 13,
+              display: "grid", gridTemplateColumns: "1fr 100px 100px 80px 60px",
+              gap: 8, padding: "10px 12px", borderBottom: "1px solid #f5f5f5", fontSize: 13,
               background: status === "rot" ? "rgba(204,51,51,0.03)" : "transparent",
             }}>
               <span style={{ color: "#333" }}>{k.kategorie}</span>
               <span style={{ textAlign: "right", fontFamily: "'Space Mono', monospace", fontSize: 12, color: "#999" }}>{fmt(k.soll)}</span>
               <span style={{ textAlign: "right", fontFamily: "'Space Mono', monospace", fontSize: 12, color: "#222" }}>{fmt(k.ist)}</span>
-              <span style={{
-                textAlign: "right",
-                fontFamily: "'Space Mono', monospace",
-                fontSize: 12,
-                color: ampelColors[status],
-                fontWeight: status !== "gruen" ? 600 : 400,
-              }}>
+              <span style={{ textAlign: "right", fontFamily: "'Space Mono', monospace", fontSize: 12, color: ampelColors[status], fontWeight: status !== "gruen" ? 600 : 400 }}>
                 {fmtPct(abw)}
               </span>
               <span style={{ textAlign: "center", fontSize: 14 }}>
@@ -367,25 +450,14 @@ function FinanzierungsplanView({ project }) {
             </div>
           );
         })}
-        {/* Summe */}
         <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 100px 100px 80px 60px",
-          gap: 8,
-          padding: "10px 12px",
-          borderTop: "2px solid #eee",
-          fontSize: 13,
-          fontWeight: 600,
+          display: "grid", gridTemplateColumns: "1fr 100px 100px 80px 60px",
+          gap: 8, padding: "10px 12px", borderTop: "2px solid #eee", fontSize: 13, fontWeight: 600,
         }}>
           <span style={{ color: "#111" }}>Gesamt</span>
           <span style={{ textAlign: "right", fontFamily: "'Space Mono', monospace", fontSize: 12, color: "#999" }}>{fmt(totalSoll)}</span>
           <span style={{ textAlign: "right", fontFamily: "'Space Mono', monospace", fontSize: 12, color: "#111" }}>{fmt(totalIst)}</span>
-          <span style={{
-            textAlign: "right",
-            fontFamily: "'Space Mono', monospace",
-            fontSize: 12,
-            color: ampelColors[schwellenwertStatus(totalSoll, totalIst)],
-          }}>
+          <span style={{ textAlign: "right", fontFamily: "'Space Mono', monospace", fontSize: 12, color: ampelColors[schwellenwertStatus(totalSoll, totalIst)] }}>
             {totalSoll > 0 ? fmtPct(((totalIst - totalSoll) / totalSoll) * 100) : "–"}
           </span>
           <span />
@@ -399,10 +471,7 @@ function FinanzierungsplanView({ project }) {
           <BarChart data={chartData} margin={{ left: 60, right: 16 }}>
             <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#999" }} />
             <YAxis tick={{ fontSize: 10, fill: "#aaa" }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-            <Tooltip
-              formatter={(v) => fmt(v)}
-              contentStyle={{ fontSize: 12, border: "1px solid #eee", borderRadius: 0, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
-            />
+            <Tooltip formatter={(v) => fmt(v)} contentStyle={{ fontSize: 12, border: "1px solid #eee", borderRadius: 0, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }} />
             <Bar dataKey="Soll" fill="#ddd" radius={[2, 2, 0, 0]} />
             <Bar dataKey="Ist" radius={[2, 2, 0, 0]}>
               {chartData.map((entry, i) => (
@@ -413,11 +482,10 @@ function FinanzierungsplanView({ project }) {
         </ResponsiveContainer>
       </div>
 
-      {/* Legende */}
       <div style={{ display: "flex", gap: 24, marginTop: 16, fontSize: 11, color: "#999" }}>
-        <span>{"\u{1F7E2}"} Abweichung {"<"} 15%</span>
-        <span>{"\u{1F7E1}"} Abweichung 15–20% (Achtung)</span>
-        <span>{"\u{1F534}"} Abweichung {">"} 20% (Änderungsantrag!)</span>
+        <span>{"\u{1F7E2}"} {"<"} 15%</span>
+        <span>{"\u{1F7E1}"} 15–20%</span>
+        <span>{"\u{1F534}"} {">"} 20% (Änderungsantrag)</span>
       </div>
     </div>
   );
@@ -425,6 +493,19 @@ function FinanzierungsplanView({ project }) {
 
 function MittelabrufView({ project }) {
   const totalAbgerufen = project.abrufe.reduce((s, a) => s + a.betrag, 0);
+  const progress = projectProgress(project);
+
+  // Burn rate vs time chart data
+  const burnData = [];
+  let cumulative = 0;
+  for (const a of project.abrufe) {
+    cumulative += a.betrag;
+    burnData.push({
+      quartal: a.quartal,
+      Abgerufen: cumulative,
+      Planwert: Math.round(project.bewilligt * (burnData.length + 1) / (project.abrufe.length + 2)),
+    });
+  }
 
   return (
     <div>
@@ -432,33 +513,43 @@ function MittelabrufView({ project }) {
         Mittelabruf-Übersicht · Zahlungsanforderungen via profi-Online
       </div>
 
-      {/* Warnung Bedarfsprinzip */}
       <div style={{
-        padding: "12px 16px",
-        marginBottom: 20,
-        background: "rgba(0,140,70,0.03)",
-        border: "1px solid rgba(0,140,70,0.1)",
-        fontSize: 12,
-        color: "#666",
-        lineHeight: 1.6,
+        padding: "12px 16px", marginBottom: 20,
+        background: "rgba(0,140,70,0.03)", border: "1px solid rgba(0,140,70,0.1)",
+        fontSize: 12, color: "#666", lineHeight: 1.6,
       }}>
         Bedarfsprinzip (BHO): Mittel nur bedarfsgerecht abrufen. Überschüssige Mittel lösen Zinsforderung aus (5% über Basiszins).
       </div>
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
-        <div style={cardStyle}>
-          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Abgerufen</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#111" }}>{fmt(totalAbgerufen)}</div>
-        </div>
-        <div style={cardStyle}>
-          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Verbleibend</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#008c46" }}>{fmt(project.bewilligt - totalAbgerufen)}</div>
-        </div>
-        <div style={cardStyle}>
-          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Abrufquote</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#111" }}>{((totalAbgerufen / project.bewilligt) * 100).toFixed(1)}%</div>
-        </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
+        {[
+          { label: "Abgerufen", value: fmt(totalAbgerufen), color: "#111" },
+          { label: "Verbleibend", value: fmt(project.bewilligt - totalAbgerufen), color: "#008c46" },
+          { label: "Abrufquote", value: `${((totalAbgerufen / project.bewilligt) * 100).toFixed(1)}%`, color: "#111" },
+          { label: "Zeitfortschritt", value: `${progress.toFixed(0)}%`, color: progress > ((totalAbgerufen / project.bewilligt) * 100) + 15 ? "#cc7700" : "#111" },
+        ].map((s) => (
+          <div key={s.label} style={cardStyle}>
+            <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>{s.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Burn Rate Chart */}
+      <div style={{ border: "1px solid #eee", padding: 24, marginBottom: 24 }}>
+        <div style={{ ...monoLabel, marginBottom: 16 }}>Kumulierter Mittelabruf vs. Planwert</div>
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart data={burnData} margin={{ left: 60, right: 16 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="quartal" tick={{ fontSize: 10, fill: "#999" }} />
+            <YAxis tick={{ fontSize: 10, fill: "#aaa" }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+            <Tooltip formatter={(v) => fmt(v)} contentStyle={{ fontSize: 12, border: "1px solid #eee", borderRadius: 0 }} />
+            <Line type="monotone" dataKey="Planwert" stroke="#ddd" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+            <Line type="monotone" dataKey="Abgerufen" stroke="#008c46" strokeWidth={2} dot={{ r: 3, fill: "#008c46" }} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Abruf-Timeline */}
@@ -466,30 +557,18 @@ function MittelabrufView({ project }) {
       <div style={{ display: "grid", gap: 6 }}>
         {project.abrufe.map((a, i) => (
           <div key={i} style={{
-            display: "grid",
-            gridTemplateColumns: "100px 100px 1fr 100px",
-            gap: 12,
-            padding: "10px 16px",
-            border: "1px solid #f0f0f0",
-            alignItems: "center",
+            display: "grid", gridTemplateColumns: "100px 100px 1fr 100px",
+            gap: 12, padding: "10px 16px", border: "1px solid #f0f0f0", alignItems: "center",
             background: a.status === "offen" ? "rgba(204,119,0,0.03)" : "#fff",
           }}>
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#999" }}>
-              {a.quartal}
-            </span>
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#999" }}>{a.quartal}</span>
             <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 12, color: "#222", fontWeight: 600 }}>
               {a.betrag > 0 ? fmt(a.betrag) : "–"}
             </span>
-            <span style={{ fontSize: 11, color: "#bbb" }}>
-              {a.datum}
-            </span>
+            <span style={{ fontSize: 11, color: "#bbb" }}>{a.datum}</span>
             <span style={{
-              fontSize: 9,
-              fontFamily: "'Space Mono', monospace",
-              textTransform: "uppercase",
-              textAlign: "right",
-              color: a.status === "ausgezahlt" ? "#008c46" : a.status === "geprüft" ? "#0066cc" : "#cc7700",
-              fontWeight: 600,
+              fontSize: 9, fontFamily: "'Space Mono', monospace", textTransform: "uppercase", textAlign: "right",
+              color: a.status === "ausgezahlt" ? "#008c46" : a.status === "geprüft" ? "#0066cc" : "#cc7700", fontWeight: 600,
             }}>
               {a.status}
             </span>
@@ -505,9 +584,7 @@ function FristenView({ project }) {
 
   return (
     <div>
-      <div style={{ ...monoLabel, marginBottom: 16, color: "#008c46" }}>
-        Fristen & Deadlines
-      </div>
+      <div style={{ ...monoLabel, marginBottom: 16, color: "#008c46" }}>Fristen & Deadlines</div>
 
       <div style={{ display: "grid", gap: 8 }}>
         {allFristen.map((f, i) => {
@@ -515,39 +592,24 @@ function FristenView({ project }) {
           const days = daysUntil(f.datum);
           return (
             <div key={i} style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 120px 120px 100px",
-              gap: 12,
-              padding: "12px 16px",
+              display: "grid", gridTemplateColumns: "1fr 120px 120px 100px",
+              gap: 12, padding: "12px 16px", alignItems: "center",
               border: `1px solid ${ampel === "ueberfaellig" ? "rgba(153,0,0,0.2)" : "#f0f0f0"}`,
-              alignItems: "center",
               background: ampel === "ueberfaellig" ? "rgba(153,0,0,0.03)" : ampel === "dringend" ? "rgba(204,51,51,0.02)" : "#fff",
             }}>
               <span style={{ fontSize: 13, color: "#333", fontWeight: 500 }}>{f.typ}</span>
               <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#999" }}>
                 {new Date(f.datum).toLocaleDateString("de-DE")}
               </span>
-              <span style={{
-                fontFamily: "'Space Mono', monospace",
-                fontSize: 11,
-                color: ampelColors[ampel],
-                fontWeight: 600,
-              }}>
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: ampelColors[ampel], fontWeight: 600 }}>
                 {f.status === "geprüft" || f.status === "erledigt" || f.status === "eingereicht"
                   ? f.status.toUpperCase()
-                  : days < 0
-                    ? `${Math.abs(days)} TAGE ÜBERFÄLLIG`
-                    : `in ${days} Tagen`}
+                  : days < 0 ? `${Math.abs(days)} TAGE ÜBERFÄLLIG` : `in ${days} Tagen`}
               </span>
               <span style={{
-                fontSize: 9,
-                fontFamily: "'Space Mono', monospace",
-                textTransform: "uppercase",
-                textAlign: "center",
-                padding: "3px 8px",
-                color: ampelColors[ampel],
+                fontSize: 9, fontFamily: "'Space Mono', monospace", textTransform: "uppercase", textAlign: "center",
+                padding: "3px 8px", fontWeight: 600, color: ampelColors[ampel],
                 background: ampel === "done" ? "#f5f5f5" : ampel === "ok" ? ampelBg.gruen : ampel === "bald" ? ampelBg.gelb : ampelBg.rot,
-                fontWeight: 600,
               }}>
                 {ampel === "done" ? "ERLEDIGT" : ampel === "ok" ? "OK" : ampel === "bald" ? "BALD" : ampel === "dringend" ? "DRINGEND" : "ÜBERFÄLLIG"}
               </span>
@@ -556,47 +618,30 @@ function FristenView({ project }) {
         })}
       </div>
 
-      {/* Vergabe-Tracker */}
       {project.vergaben && project.vergaben.length > 0 && (
         <div style={{ marginTop: 32 }}>
-          <div style={{ ...monoLabel, marginBottom: 12, color: "#008c46" }}>
-            Vergabedokumentation · Unteraufträge
-          </div>
+          <div style={{ ...monoLabel, marginBottom: 12, color: "#008c46" }}>Vergabedokumentation · Unteraufträge</div>
           <div style={{
-            padding: "12px 16px",
-            marginBottom: 16,
-            background: "rgba(204,119,0,0.04)",
-            border: "1px solid rgba(204,119,0,0.1)",
-            fontSize: 11,
-            color: "#888",
-            lineHeight: 1.6,
+            padding: "12px 16px", marginBottom: 16,
+            background: "rgba(204,119,0,0.04)", border: "1px solid rgba(204,119,0,0.1)",
+            fontSize: 11, color: "#888", lineHeight: 1.6,
           }}>
-            Vergaberechtsfehler sind der häufigste Grund für Rückforderungen (BRH). Ab 1.000 € sind Vergleichsangebote erforderlich.
+            Vergaberechtsfehler = häufigster Grund für Rückforderungen (Bundesrechnungshof). Ab 1.000 € Vergleichsangebote erforderlich.
           </div>
           <div style={{ display: "grid", gap: 6 }}>
             {project.vergaben.map((v, i) => (
               <div key={i} style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 100px 80px 100px",
-                gap: 12,
-                padding: "10px 16px",
-                border: "1px solid #f0f0f0",
-                alignItems: "center",
+                display: "grid", gridTemplateColumns: "1fr 100px 80px 100px",
+                gap: 12, padding: "10px 16px", border: "1px solid #f0f0f0", alignItems: "center",
               }}>
                 <span style={{ fontSize: 13, color: "#333" }}>{v.beschreibung}</span>
-                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 12, color: "#222", fontWeight: 600 }}>
-                  {fmt(v.betrag)}
-                </span>
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 12, color: "#222", fontWeight: 600 }}>{fmt(v.betrag)}</span>
                 <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#999" }}>
                   {v.angebote} Angebot{v.angebote !== 1 ? "e" : ""}
                 </span>
                 <span style={{
-                  fontSize: 9,
-                  fontFamily: "'Space Mono', monospace",
-                  textTransform: "uppercase",
-                  textAlign: "center",
-                  padding: "3px 8px",
-                  fontWeight: 600,
+                  fontSize: 9, fontFamily: "'Space Mono', monospace", textTransform: "uppercase", textAlign: "center",
+                  padding: "3px 8px", fontWeight: 600,
                   color: v.status === "dokumentiert" ? "#008c46" : "#cc7700",
                   background: v.status === "dokumentiert" ? ampelBg.gruen : ampelBg.gelb,
                 }}>
@@ -612,6 +657,258 @@ function FristenView({ project }) {
 }
 
 // ---------------------------------------------------------------------------
+// Verbundprojekt-Dashboard
+// ---------------------------------------------------------------------------
+function VerbundView({ project }) {
+  if (!project.isVerbund || !project.partners) return null;
+
+  const partners = project.partners;
+  const totalVerbundBewilligt = partners.reduce((s, p) => s + p.bewilligt, 0);
+  const totalVerbundIst = partners.reduce((s, p) => s + partnerIst(p), 0);
+
+  const pieData = partners.map((p, i) => ({
+    name: p.name.split(" — ")[0].split(" GmbH")[0],
+    value: p.bewilligt,
+    fill: PARTNER_COLORS[i],
+  }));
+
+  return (
+    <div>
+      <div style={{ ...monoLabel, marginBottom: 16, color: "#008c46" }}>
+        Verbundprojekt · {partners.length} Partner · Koordinator: {partners[0].name}
+      </div>
+
+      {/* Verbund-Gesamtübersicht */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 32 }}>
+        <div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+            <div style={cardStyle}>
+              <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Verbund-Volumen</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: "#111" }}>{fmt(totalVerbundBewilligt)}</div>
+            </div>
+            <div style={cardStyle}>
+              <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Verbund-Ist</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: "#008c46" }}>{fmt(totalVerbundIst)}</div>
+            </div>
+          </div>
+
+          {/* Partner-Typ Erklärung */}
+          <div style={{ border: "1px solid #eee", padding: 16 }}>
+            <div style={{ ...monoLabel, marginBottom: 10 }}>Abrechnungsbasen im Verbund</div>
+            <div style={{ fontSize: 11, color: "#666", lineHeight: 1.8 }}>
+              <div><strong>Fraunhofer IZM</strong> — Kostenbasis, 110% Gemeinkosten, 100% Förderquote</div>
+              <div><strong>TU Berlin</strong> — Ausgabenbasis, 20% Programmpauschale, 100% Förderquote</div>
+              <div><strong>MobilityTech</strong> — Kostenbasis, 100% GK (KMU-Satz), 80% Förderquote</div>
+              <div><strong>Siemens Mobility</strong> — Kostenbasis, 120% GK, 50% Förderquote</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Pie Chart */}
+        <div style={{ border: "1px solid #eee", padding: 24 }}>
+          <div style={{ ...monoLabel, marginBottom: 16 }}>Budget-Verteilung im Verbund</div>
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie data={pieData} dataKey="value" cx="50%" cy="50%" outerRadius={75} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} style={{ fontSize: 10 }}>
+                {pieData.map((entry, i) => (
+                  <Cell key={i} fill={entry.fill} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(v) => fmt(v)} contentStyle={{ fontSize: 12, border: "1px solid #eee", borderRadius: 0 }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Partner-Karten */}
+      <div style={{ ...monoLabel, marginBottom: 12 }}>Finanzstatus je Partner</div>
+      <div style={{ display: "grid", gap: 12 }}>
+        {partners.map((p, i) => {
+          const ist = partnerIst(p);
+          const soll = partnerSoll(p);
+          const burnPct = (ist / p.bewilligt) * 100;
+          const hasWarning = p.finanzierungsplan.some((k) => schwellenwertStatus(k.soll, k.ist) !== "gruen");
+
+          return (
+            <div key={p.id} style={{
+              border: `1px solid ${hasWarning ? "rgba(204,119,0,0.3)" : "#eee"}`,
+              padding: "16px 20px",
+              background: hasWarning ? "rgba(204,119,0,0.02)" : "#fff",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: PARTNER_COLORS[i] }} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#222" }}>{p.name}</div>
+                    <div style={{ fontSize: 10, color: "#999" }}>{p.typ} · {p.rolle} · {p.basis} · {p.gemeinkosten} GK · {p.foerderquote}% FQ</div>
+                  </div>
+                </div>
+                <div style={{
+                  ...monoLabel, fontSize: 9, padding: "3px 8px",
+                  color: hasWarning ? "#cc7700" : "#008c46",
+                  background: hasWarning ? ampelBg.gelb : ampelBg.gruen,
+                }}>
+                  {p.abrufStatus === "warnung" ? "WARNUNG" : "IM PLAN"}
+                </div>
+              </div>
+
+              {/* Mini Finanzplan */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr repeat(4, auto)", gap: 4, fontSize: 11 }}>
+                {p.finanzierungsplan.map((k, j) => {
+                  const abw = k.soll > 0 ? ((k.ist - k.soll) / k.soll) * 100 : 0;
+                  const status = schwellenwertStatus(k.soll, k.ist);
+                  return (
+                    <div key={j} style={{ display: "contents" }}>
+                      <span style={{ color: "#666", fontSize: 11, padding: "3px 0" }}>{k.kategorie}</span>
+                      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#bbb", textAlign: "right", padding: "3px 8px" }}>{fmt(k.soll)}</span>
+                      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#333", textAlign: "right", padding: "3px 8px" }}>{fmt(k.ist)}</span>
+                      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: ampelColors[status], textAlign: "right", padding: "3px 8px", fontWeight: status !== "gruen" ? 600 : 400 }}>
+                        {fmtPct(abw)}
+                      </span>
+                      <span style={{ fontSize: 12, textAlign: "center", padding: "3px 4px" }}>
+                        {status === "gruen" ? "\u{1F7E2}" : status === "gelb" ? "\u{1F7E1}" : "\u{1F534}"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Budget Bar */}
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#bbb", marginTop: 10, marginBottom: 3 }}>
+                <span>{fmt(ist)} / {fmt(p.bewilligt)}</span>
+                <span style={{ fontFamily: "'Space Mono', monospace" }}>{burnPct.toFixed(0)}%</span>
+              </div>
+              <div style={{ height: 3, background: "#f0f0f0", borderRadius: 2 }}>
+                <div style={{
+                  height: "100%", width: `${Math.min(100, burnPct)}%`,
+                  background: PARTNER_COLORS[i], borderRadius: 2,
+                }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Belegliste (Excel-Import Demo)
+// ---------------------------------------------------------------------------
+function BeleglisteView({ project }) {
+  const kategorien = {};
+  for (const b of DEMO_BELEGLISTE) {
+    kategorien[b.kostenart] = (kategorien[b.kostenart] || 0) + b.netto;
+  }
+  const summeNetto = DEMO_BELEGLISTE.reduce((s, b) => s + b.netto, 0);
+  const summeBrutto = DEMO_BELEGLISTE.reduce((s, b) => s + b.brutto, 0);
+
+  return (
+    <div>
+      <div style={{ ...monoLabel, marginBottom: 16, color: "#008c46" }}>
+        Belegliste · Q1/2025 · {project.kuerzel}
+      </div>
+
+      <div style={{
+        padding: "12px 16px", marginBottom: 20,
+        background: "rgba(0,102,204,0.04)", border: "1px solid rgba(0,102,204,0.1)",
+        fontSize: 12, color: "#555", lineHeight: 1.7,
+      }}>
+        <strong>Excel-Import Konzept:</strong> Controller exportieren Beleglisten aus SAP/DATEV als CSV.
+        Das Tool liest die Spalten automatisch ein, ordnet Kostenarten zu (NKBF/ANBest-P) und
+        prüft gegen den Finanzierungsplan. Abweichungen {">"} 20% werden sofort markiert.
+      </div>
+
+      {/* Zusammenfassung */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
+        <div style={cardStyle}>
+          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Belege</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#111" }}>{DEMO_BELEGLISTE.length}</div>
+        </div>
+        <div style={cardStyle}>
+          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Netto Gesamt</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#111" }}>{fmt(summeNetto)}</div>
+        </div>
+        <div style={cardStyle}>
+          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Brutto Gesamt</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#666" }}>{fmt(summeBrutto)}</div>
+        </div>
+        <div style={cardStyle}>
+          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Kostenarten</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#008c46" }}>{Object.keys(kategorien).length}</div>
+        </div>
+      </div>
+
+      {/* Kostenarten-Aufschlüsselung */}
+      <div style={{ ...monoLabel, marginBottom: 10 }}>Zuordnung nach Kostenart</div>
+      <div style={{ display: "grid", gap: 6, marginBottom: 24 }}>
+        {Object.entries(kategorien).sort((a, b) => b[1] - a[1]).map(([kat, sum]) => (
+          <div key={kat} style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            padding: "8px 12px", border: "1px solid #f0f0f0",
+          }}>
+            <span style={{ fontSize: 12, color: "#333" }}>{kat}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 12, color: "#222", fontWeight: 600 }}>{fmt(sum)}</span>
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#bbb" }}>
+                {((sum / summeNetto) * 100).toFixed(0)}%
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Belegliste Tabelle */}
+      <div style={{ ...monoLabel, marginBottom: 10 }}>Einzelbelege (wie aus Excel/CSV importiert)</div>
+      <div style={{ overflowX: "auto" }}>
+        <div style={{
+          display: "grid", gridTemplateColumns: "90px 80px 140px 1fr 80px 60px 80px 50px",
+          gap: 4, padding: "6px 10px", borderBottom: "1px solid #eee",
+          ...monoLabel, fontSize: 8, minWidth: 800,
+        }}>
+          <span>Beleg-Nr.</span>
+          <span>Datum</span>
+          <span>Kostenart</span>
+          <span>Beschreibung</span>
+          <span style={{ textAlign: "right" }}>Netto</span>
+          <span style={{ textAlign: "right" }}>MwSt</span>
+          <span style={{ textAlign: "right" }}>Brutto</span>
+          <span>AP</span>
+        </div>
+        {DEMO_BELEGLISTE.map((b, i) => (
+          <div key={i} style={{
+            display: "grid", gridTemplateColumns: "90px 80px 140px 1fr 80px 60px 80px 50px",
+            gap: 4, padding: "6px 10px", borderBottom: "1px solid #f8f8f8",
+            fontSize: 11, minWidth: 800,
+            background: i % 2 === 0 ? "#fff" : "#fafafa",
+          }}>
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#999" }}>{b.nr}</span>
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#999" }}>{b.datum}</span>
+            <span style={{ color: "#666", fontSize: 10 }}>{b.kostenart}</span>
+            <span style={{ color: "#333", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.beschreibung}</span>
+            <span style={{ textAlign: "right", fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#222" }}>{fmtExact(b.netto)}</span>
+            <span style={{ textAlign: "right", fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#bbb" }}>{fmtExact(b.mwst)}</span>
+            <span style={{ textAlign: "right", fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#222", fontWeight: 600 }}>{fmtExact(b.brutto)}</span>
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#bbb" }}>{b.ap}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* CSV Format Hinweis */}
+      <div style={{
+        marginTop: 20, padding: "14px 16px",
+        background: "#fafafa", border: "1px solid #eee",
+        fontSize: 11, color: "#888", lineHeight: 1.7,
+        fontFamily: "'Space Mono', monospace",
+      }}>
+        CSV-Format: Beleg-Nr;Datum;Kostenart;Beschreibung;Netto;MwSt;Brutto;AP<br />
+        Encoding: UTF-8 · Dezimaltrennzeichen: Komma · Feldtrenner: Semikolon
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 export default function FoerdermittelPipeline() {
@@ -621,7 +918,6 @@ export default function FoerdermittelPipeline() {
 
   const project = DEMO_PROJECTS[selectedProject];
 
-  // Portfolio-Kennzahlen
   const totalBewilligt = DEMO_PROJECTS.reduce((s, p) => s + p.bewilligt, 0);
   const totalIst = DEMO_PROJECTS.reduce((s, p) => s + p.finanzierungsplan.reduce((ss, k) => ss + k.ist, 0), 0);
   const projectsWithWarning = DEMO_PROJECTS.filter((p) =>
@@ -629,6 +925,19 @@ export default function FoerdermittelPipeline() {
   ).length;
   const upcomingFristen = DEMO_PROJECTS.flatMap((p) => p.fristen)
     .filter((f) => f.status === "offen" && daysUntil(f.datum) <= 90 && daysUntil(f.datum) >= 0).length;
+
+  // Tabs dynamisch je nach Projekt
+  const tabs = [
+    { key: "finanzplan", label: "Finanzierungsplan" },
+    { key: "abruf", label: "Mittelabruf" },
+    { key: "fristen", label: "Fristen & Vergabe" },
+    ...(project.isVerbund ? [{ key: "verbund", label: "Verbundpartner" }] : []),
+    { key: "belegliste", label: "Belegliste" },
+  ];
+
+  // Reset tab if switching from Verbund project
+  const validTabs = tabs.map((t) => t.key);
+  const currentTab = validTabs.includes(activeTab) ? activeTab : "finanzplan";
 
   return (
     <section
@@ -644,28 +953,23 @@ export default function FoerdermittelPipeline() {
       </h2>
       <p style={{ fontSize: 14, color: "#999", marginBottom: 48, maxWidth: 600 }}>
         Projektcontrolling für BMBF/BMWK-Förderprojekte. Finanzierungsplan-Überwachung
-        mit 20%-Schwellenwert-Ampel, Mittelabruf-Tracking und Fristenmanagement.
-        Demo mit realistischen Beispieldaten.
+        mit 20%-Schwellenwert-Ampel, Verbundprojekt-Koordination, Mittelabruf-Tracking
+        und Beleglisten-Import. Demo mit realistischen Beispieldaten.
       </p>
 
       {/* Portfolio Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32 }}>
-        <div style={cardStyle}>
-          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Projekte</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "#111" }}>{DEMO_PROJECTS.length}</div>
-        </div>
-        <div style={cardStyle}>
-          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Fördervolumen</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "#111" }}>{(totalBewilligt / 1000000).toFixed(1)}M</div>
-        </div>
-        <div style={cardStyle}>
-          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Warnungen</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: projectsWithWarning > 0 ? "#cc7700" : "#008c46" }}>{projectsWithWarning}</div>
-        </div>
-        <div style={cardStyle}>
-          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Fristen {"<"} 90 Tage</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: upcomingFristen > 0 ? "#cc7700" : "#008c46" }}>{upcomingFristen}</div>
-        </div>
+        {[
+          { label: "Projekte", value: DEMO_PROJECTS.length, color: "#111" },
+          { label: "Fördervolumen", value: `${(totalBewilligt / 1000000).toFixed(1)}M`, color: "#111" },
+          { label: "Warnungen", value: projectsWithWarning, color: projectsWithWarning > 0 ? "#cc7700" : "#008c46" },
+          { label: `Fristen < 90 Tage`, value: upcomingFristen, color: upcomingFristen > 0 ? "#cc7700" : "#008c46" },
+        ].map((s) => (
+          <div key={s.label} style={cardStyle}>
+            <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>{s.label}</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: s.color }}>{s.value}</div>
+          </div>
+        ))}
       </div>
 
       {/* Projekt-Auswahl */}
@@ -675,43 +979,42 @@ export default function FoerdermittelPipeline() {
             key={p.id}
             project={p}
             selected={selectedProject === i}
-            onClick={() => setSelectedProject(i)}
+            onClick={() => { setSelectedProject(i); setActiveTab("finanzplan"); }}
           />
         ))}
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 0, marginBottom: 24, borderBottom: "1px solid #eee" }}>
-        {[
-          { key: "finanzplan", label: "Finanzierungsplan" },
-          { key: "abruf", label: "Mittelabruf" },
-          { key: "fristen", label: "Fristen & Vergabe" },
-        ].map((t) => (
+      <div style={{ display: "flex", gap: 0, marginBottom: 24, borderBottom: "1px solid #eee", flexWrap: "wrap" }}>
+        {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
             style={{
-              background: "none",
-              border: "none",
-              borderBottom: activeTab === t.key ? "2px solid #008c46" : "2px solid transparent",
-              padding: "12px 24px",
-              fontSize: 13,
-              fontFamily: "'DM Sans', sans-serif",
-              fontWeight: activeTab === t.key ? 600 : 400,
-              color: activeTab === t.key ? "#111" : "#999",
-              cursor: "pointer",
-              transition: "all 0.2s",
+              background: "none", border: "none",
+              borderBottom: currentTab === t.key ? "2px solid #008c46" : "2px solid transparent",
+              padding: "12px 20px", fontSize: 13, fontFamily: "'DM Sans', sans-serif",
+              fontWeight: currentTab === t.key ? 600 : 400,
+              color: currentTab === t.key ? "#111" : "#999",
+              cursor: "pointer", transition: "all 0.2s",
             }}
           >
             {t.label}
+            {t.key === "verbund" && (
+              <span style={{ marginLeft: 6, fontSize: 9, fontFamily: "'Space Mono', monospace", color: "#0066cc" }}>
+                {project.partners?.length}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
       {/* Tab Content */}
-      {activeTab === "finanzplan" && <FinanzierungsplanView project={project} />}
-      {activeTab === "abruf" && <MittelabrufView project={project} />}
-      {activeTab === "fristen" && <FristenView project={project} />}
+      {currentTab === "finanzplan" && <FinanzierungsplanView project={project} />}
+      {currentTab === "abruf" && <MittelabrufView project={project} />}
+      {currentTab === "fristen" && <FristenView project={project} />}
+      {currentTab === "verbund" && project.isVerbund && <VerbundView project={project} />}
+      {currentTab === "belegliste" && <BeleglisteView project={project} />}
     </section>
   );
 }
