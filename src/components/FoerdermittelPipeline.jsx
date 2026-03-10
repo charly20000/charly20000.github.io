@@ -205,20 +205,34 @@ const DEMO_PROJECTS = [
   },
 ];
 
-// Demo-Belegliste (wie aus Excel importiert)
+// profi-Online Positionsnummern (Finanzierungsplan)
+const PROFI_POSITIONEN = {
+  "0812": "Beschäftigte E12–E15",
+  "0817": "Beschäftigte E1–E11",
+  "0822": "Wiss./stud. Hilfskräfte",
+  "0831": "Gegenstände bis 800 €",
+  "0834": "Mieten und Rechnerkosten",
+  "0837": "Personalkosten (AZK)",
+  "0843": "Sonstige Verwaltungsausgaben",
+  "0846": "Dienstreisen",
+  "0850": "Investitionen > 800 €",
+};
+
+// Demo-Belegliste nach BMBF-Vordruck 0623a
+// Spalten: Lfd. Nr., Tag der Zahlung, Empfänger/Einzahler, Grund der Zahlung, Einzelbetrag, Pos. im FiPlan
 const DEMO_BELEGLISTE = [
-  { nr: "BL-2025-001", datum: "2025-01-15", kostenart: "Personaleinzelkosten", beschreibung: "Dr. Müller — 160h Projektarbeit Jan 2025", netto: 12800, mwst: 0, brutto: 12800, ap: "AP 2.1" },
-  { nr: "BL-2025-002", datum: "2025-01-22", kostenart: "Sachkosten", beschreibung: "GPU-Server Nvidia A100 (Anteil Projekt)", netto: 4200, mwst: 798, brutto: 4998, ap: "AP 1.3" },
-  { nr: "BL-2025-003", datum: "2025-01-28", kostenart: "Reisekosten", beschreibung: "Projekttreffen München — DB + Hotel 2 Nächte", netto: 487.50, mwst: 0, brutto: 487.50, ap: "AP 5.0" },
-  { nr: "BL-2025-004", datum: "2025-02-01", kostenart: "Personaleinzelkosten", beschreibung: "M.Sc. Schmidt — 140h Datenanalyse Feb 2025", netto: 8400, mwst: 0, brutto: 8400, ap: "AP 2.2" },
-  { nr: "BL-2025-005", datum: "2025-02-10", kostenart: "Unteraufträge", beschreibung: "Fraunhofer IPT — Messprotokoll Sensorsysteme", netto: 15000, mwst: 2850, brutto: 17850, ap: "AP 3.1" },
-  { nr: "BL-2025-006", datum: "2025-02-15", kostenart: "Personaleinzelkosten", beschreibung: "Dr. Müller — 152h Projektarbeit Feb 2025", netto: 12160, mwst: 0, brutto: 12160, ap: "AP 2.1" },
-  { nr: "BL-2025-007", datum: "2025-02-20", kostenart: "Sachkosten", beschreibung: "Softwarelizenz MATLAB (Jahresanteil)", netto: 1850, mwst: 351.50, brutto: 2201.50, ap: "AP 1.2" },
-  { nr: "BL-2025-008", datum: "2025-03-01", kostenart: "Personaleinzelkosten", beschreibung: "M.Sc. Schmidt — 168h Modelltraining März 2025", netto: 10080, mwst: 0, brutto: 10080, ap: "AP 2.3" },
-  { nr: "BL-2025-009", datum: "2025-03-05", kostenart: "Reisekosten", beschreibung: "Konferenz ML4Industry Berlin — Teilnahmegebühr", netto: 450, mwst: 85.50, brutto: 535.50, ap: "AP 5.0" },
-  { nr: "BL-2025-010", datum: "2025-03-12", kostenart: "Sachkosten", beschreibung: "Sensoren + Messtechnik (10 Stück)", netto: 3200, mwst: 608, brutto: 3808, ap: "AP 3.2" },
-  { nr: "BL-2025-011", datum: "2025-03-15", kostenart: "Personaleinzelkosten", beschreibung: "Dr. Müller — 144h Projektarbeit März 2025", netto: 11520, mwst: 0, brutto: 11520, ap: "AP 2.1" },
-  { nr: "BL-2025-012", datum: "2025-03-20", kostenart: "Unteraufträge", beschreibung: "Cloud Computing AWS — Q1/2025 Abrechnung", netto: 6800, mwst: 1292, brutto: 8092, ap: "AP 1.4" },
+  { nr: 1, zahltag: "15.01.2025", empfaenger: "Dr. Müller (E13, TV-L)", grund: "160h Projektarbeit Jan 2025 — AP 2.1", betrag: 12800, position: "0837" },
+  { nr: 2, zahltag: "22.01.2025", empfaenger: "Dell Technologies GmbH", grund: "GPU-Server Nvidia A100 (Anteil Projekt) — AP 1.3", betrag: 4998, position: "0850" },
+  { nr: 3, zahltag: "28.01.2025", empfaenger: "Deutsche Bahn / Motel One", grund: "Projekttreffen München — DB Ticket + Hotel 2 Nächte — AP 5.0", betrag: 487.50, position: "0846" },
+  { nr: 4, zahltag: "01.02.2025", empfaenger: "M.Sc. Schmidt (E11, TV-L)", grund: "140h Datenanalyse Feb 2025 — AP 2.2", betrag: 8400, position: "0837" },
+  { nr: 5, zahltag: "10.02.2025", empfaenger: "Fraunhofer IPT, Aachen", grund: "Unterauftrag Messprotokoll Sensorsysteme — AP 3.1", betrag: 17850, position: "0843" },
+  { nr: 6, zahltag: "15.02.2025", empfaenger: "Dr. Müller (E13, TV-L)", grund: "152h Projektarbeit Feb 2025 — AP 2.1", betrag: 12160, position: "0837" },
+  { nr: 7, zahltag: "20.02.2025", empfaenger: "MathWorks GmbH", grund: "Softwarelizenz MATLAB R2025a (Jahresanteil) — AP 1.2", betrag: 2201.50, position: "0834" },
+  { nr: 8, zahltag: "01.03.2025", empfaenger: "M.Sc. Schmidt (E11, TV-L)", grund: "168h Modelltraining März 2025 — AP 2.3", betrag: 10080, position: "0837" },
+  { nr: 9, zahltag: "05.03.2025", empfaenger: "ML4Industry e.V., Berlin", grund: "Konferenz Teilnahmegebühr + Tagungsband — AP 5.0", betrag: 535.50, position: "0846" },
+  { nr: 10, zahltag: "12.03.2025", empfaenger: "Keyence Deutschland GmbH", grund: "Sensoren + Messtechnik (10 Stück à 380,80 €) — AP 3.2", betrag: 3808, position: "0831" },
+  { nr: 11, zahltag: "15.03.2025", empfaenger: "Dr. Müller (E13, TV-L)", grund: "144h Projektarbeit März 2025 — AP 2.1", betrag: 11520, position: "0837" },
+  { nr: 12, zahltag: "20.03.2025", empfaenger: "Amazon Web Services EMEA", grund: "Cloud Computing Q1/2025 — EC2 + S3 Projektnutzung — AP 1.4", betrag: 8092, position: "0834" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -518,7 +532,9 @@ function MittelabrufView({ project }) {
         background: "rgba(0,140,70,0.03)", border: "1px solid rgba(0,140,70,0.1)",
         fontSize: 12, color: "#666", lineHeight: 1.6,
       }}>
-        Bedarfsprinzip (BHO): Mittel nur bedarfsgerecht abrufen. Überschüssige Mittel lösen Zinsforderung aus (5% über Basiszins).
+        Zahlungsanforderung via profi-Online (Vordruck 3220). Bedarfsprinzip (BHO §44):
+        Mittel nur bedarfsgerecht abrufen — überschüssige Mittel lösen Zinsforderung aus (5% über Basiszins).
+        Positionen im FiPlan: 0812–0850 (Personal, Sach, Reise, Investitionen, Unteraufträge).
       </div>
 
       {/* Stats */}
@@ -793,20 +809,20 @@ function VerbundView({ project }) {
 }
 
 // ---------------------------------------------------------------------------
-// Belegliste (Excel-Import Demo)
+// Belegliste (BMBF-Vordruck 0623a)
 // ---------------------------------------------------------------------------
 function BeleglisteView({ project }) {
-  const kategorien = {};
+  // Gruppierung nach profi-Online Position
+  const nachPosition = {};
   for (const b of DEMO_BELEGLISTE) {
-    kategorien[b.kostenart] = (kategorien[b.kostenart] || 0) + b.netto;
+    nachPosition[b.position] = (nachPosition[b.position] || 0) + b.betrag;
   }
-  const summeNetto = DEMO_BELEGLISTE.reduce((s, b) => s + b.netto, 0);
-  const summeBrutto = DEMO_BELEGLISTE.reduce((s, b) => s + b.brutto, 0);
+  const summe = DEMO_BELEGLISTE.reduce((s, b) => s + b.betrag, 0);
 
   return (
     <div>
       <div style={{ ...monoLabel, marginBottom: 16, color: "#008c46" }}>
-        Belegliste · Q1/2025 · {project.kuerzel}
+        Belegliste · BMBF-Vordruck 0623a · Q1/2025 · {project.kuerzel}
       </div>
 
       <div style={{
@@ -814,9 +830,10 @@ function BeleglisteView({ project }) {
         background: "rgba(0,102,204,0.04)", border: "1px solid rgba(0,102,204,0.1)",
         fontSize: 12, color: "#555", lineHeight: 1.7,
       }}>
-        <strong>Excel-Import Konzept:</strong> Controller exportieren Beleglisten aus SAP/DATEV als CSV.
-        Das Tool liest die Spalten automatisch ein, ordnet Kostenarten zu (NKBF/ANBest-P) und
-        prüft gegen den Finanzierungsplan. Abweichungen {">"} 20% werden sofort markiert.
+        <strong>Offizielles Format:</strong> Anlage zum zahlenmäßigen Nachweis (Verwendungsnachweis).
+        Spaltenstruktur nach BMBF-Vordruck 0623a: Lfd. Nr., Tag der Zahlung, Empfänger,
+        Grund der Zahlung, Einzelbetrag, Positionsnummer im Finanzierungsplan.
+        Belege chronologisch sortiert, je Kostenart getrennt.
       </div>
 
       {/* Zusammenfassung */}
@@ -826,83 +843,100 @@ function BeleglisteView({ project }) {
           <div style={{ fontSize: 22, fontWeight: 700, color: "#111" }}>{DEMO_BELEGLISTE.length}</div>
         </div>
         <div style={cardStyle}>
-          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Netto Gesamt</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#111" }}>{fmt(summeNetto)}</div>
+          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Gesamtbetrag</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#111" }}>{fmt(summe)}</div>
         </div>
         <div style={cardStyle}>
-          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Brutto Gesamt</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#666" }}>{fmt(summeBrutto)}</div>
+          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>FiPlan-Positionen</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#008c46" }}>{Object.keys(nachPosition).length}</div>
         </div>
         <div style={cardStyle}>
-          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Kostenarten</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#008c46" }}>{Object.keys(kategorien).length}</div>
+          <div style={{ ...monoLabel, marginBottom: 6, fontSize: 9 }}>Vordruck</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#666" }}>0623a</div>
         </div>
       </div>
 
-      {/* Kostenarten-Aufschlüsselung */}
-      <div style={{ ...monoLabel, marginBottom: 10 }}>Zuordnung nach Kostenart</div>
+      {/* Zuordnung nach profi-Online Position */}
+      <div style={{ ...monoLabel, marginBottom: 10 }}>Zuordnung nach Finanzierungsplan-Position (profi-Online)</div>
       <div style={{ display: "grid", gap: 6, marginBottom: 24 }}>
-        {Object.entries(kategorien).sort((a, b) => b[1] - a[1]).map(([kat, sum]) => (
-          <div key={kat} style={{
+        {Object.entries(nachPosition).sort((a, b) => a[0].localeCompare(b[0])).map(([pos, sum]) => (
+          <div key={pos} style={{
             display: "flex", justifyContent: "space-between", alignItems: "center",
             padding: "8px 12px", border: "1px solid #f0f0f0",
           }}>
-            <span style={{ fontSize: 12, color: "#333" }}>{kat}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#008c46", fontWeight: 600 }}>{pos}</span>
+              <span style={{ fontSize: 12, color: "#333" }}>{PROFI_POSITIONEN[pos] || pos}</span>
+            </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 12, color: "#222", fontWeight: 600 }}>{fmt(sum)}</span>
               <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#bbb" }}>
-                {((sum / summeNetto) * 100).toFixed(0)}%
+                {((sum / summe) * 100).toFixed(0)}%
               </span>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Belegliste Tabelle */}
-      <div style={{ ...monoLabel, marginBottom: 10 }}>Einzelbelege (wie aus Excel/CSV importiert)</div>
+      {/* Belegliste Tabelle nach Vordruck 0623a */}
+      <div style={{ ...monoLabel, marginBottom: 10 }}>Einzelbelege nach BMBF-Vordruck 0623a</div>
       <div style={{ overflowX: "auto" }}>
         <div style={{
-          display: "grid", gridTemplateColumns: "90px 80px 140px 1fr 80px 60px 80px 50px",
+          display: "grid", gridTemplateColumns: "40px 85px 180px 1fr 90px 55px",
           gap: 4, padding: "6px 10px", borderBottom: "1px solid #eee",
-          ...monoLabel, fontSize: 8, minWidth: 800,
+          ...monoLabel, fontSize: 8, minWidth: 750,
         }}>
-          <span>Beleg-Nr.</span>
-          <span>Datum</span>
-          <span>Kostenart</span>
-          <span>Beschreibung</span>
-          <span style={{ textAlign: "right" }}>Netto</span>
-          <span style={{ textAlign: "right" }}>MwSt</span>
-          <span style={{ textAlign: "right" }}>Brutto</span>
-          <span>AP</span>
+          <span>Nr.</span>
+          <span>Zahltag</span>
+          <span>Empfänger/Einzahler</span>
+          <span>Grund der Zahlung</span>
+          <span style={{ textAlign: "right" }}>Betrag (€)</span>
+          <span style={{ textAlign: "center" }}>Pos.</span>
         </div>
         {DEMO_BELEGLISTE.map((b, i) => (
           <div key={i} style={{
-            display: "grid", gridTemplateColumns: "90px 80px 140px 1fr 80px 60px 80px 50px",
+            display: "grid", gridTemplateColumns: "40px 85px 180px 1fr 90px 55px",
             gap: 4, padding: "6px 10px", borderBottom: "1px solid #f8f8f8",
-            fontSize: 11, minWidth: 800,
+            fontSize: 11, minWidth: 750,
             background: i % 2 === 0 ? "#fff" : "#fafafa",
           }}>
             <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#999" }}>{b.nr}</span>
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#999" }}>{b.datum}</span>
-            <span style={{ color: "#666", fontSize: 10 }}>{b.kostenart}</span>
-            <span style={{ color: "#333", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.beschreibung}</span>
-            <span style={{ textAlign: "right", fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#222" }}>{fmtExact(b.netto)}</span>
-            <span style={{ textAlign: "right", fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#bbb" }}>{fmtExact(b.mwst)}</span>
-            <span style={{ textAlign: "right", fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#222", fontWeight: 600 }}>{fmtExact(b.brutto)}</span>
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#bbb" }}>{b.ap}</span>
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#999" }}>{b.zahltag}</span>
+            <span style={{ color: "#333", fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.empfaenger}</span>
+            <span style={{ color: "#666", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.grund}</span>
+            <span style={{ textAlign: "right", fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#222", fontWeight: 600 }}>{fmtExact(b.betrag)}</span>
+            <span style={{ textAlign: "center", fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#008c46", fontWeight: 600 }}>{b.position}</span>
           </div>
         ))}
+        {/* Summenzeile */}
+        <div style={{
+          display: "grid", gridTemplateColumns: "40px 85px 180px 1fr 90px 55px",
+          gap: 4, padding: "8px 10px", borderTop: "2px solid #eee",
+          fontSize: 12, fontWeight: 600, minWidth: 750,
+        }}>
+          <span />
+          <span />
+          <span />
+          <span style={{ color: "#111" }}>Summe</span>
+          <span style={{ textAlign: "right", fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#111" }}>{fmtExact(summe)}</span>
+          <span />
+        </div>
       </div>
 
-      {/* CSV Format Hinweis */}
+      {/* Hinweis zum offiziellen Format */}
       <div style={{
         marginTop: 20, padding: "14px 16px",
         background: "#fafafa", border: "1px solid #eee",
         fontSize: 11, color: "#888", lineHeight: 1.7,
-        fontFamily: "'Space Mono', monospace",
       }}>
-        CSV-Format: Beleg-Nr;Datum;Kostenart;Beschreibung;Netto;MwSt;Brutto;AP<br />
-        Encoding: UTF-8 · Dezimaltrennzeichen: Komma · Feldtrenner: Semikolon
+        <div style={{ fontFamily: "'Space Mono', monospace", marginBottom: 6 }}>
+          BMBF-Vordruck 0623a · Belegliste (ab 20 Belege) · Anlage zum Verwendungsnachweis
+        </div>
+        <div>
+          Abgabe als Excel (.xls) + Ausdruck · Belege chronologisch und nach Kostenart getrennt ·
+          Tag der Zahlung = tatsächlicher Zahlungstag, nicht Buchungstag ·
+          Empfänger muss namentlich benannt sein (nicht „Diverse")
+        </div>
       </div>
     </div>
   );
