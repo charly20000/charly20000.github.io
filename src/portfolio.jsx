@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import Dashboard from "./components/Dashboard";
 import FoerdermittelPipeline from "./components/FoerdermittelPipeline";
 import Automatisierung from "./components/Automatisierung";
+import Lernpfad from "./components/Lernpfad";
 
-const SECTIONS = ["hero", "profil", "projekte", "skills", "dashboard", "foerdermittel", "automatisierung"];
+const SECTIONS = ["hero", "profil", "projekte", "skills", "dashboard", "foerdermittel", "automatisierung", "lernpfad"];
 
 const projects = [
   {
@@ -157,7 +158,7 @@ export default function Portfolio() {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const navLabels = { hero: "Start", profil: "Profil", projekte: "Projekte", skills: "Skills", dashboard: "Dashboard", foerdermittel: "Fördermittel", automatisierung: "Automatisierung" };
+  const navLabels = { hero: "Start", profil: "Profil", projekte: "Projekte", skills: "Skills", dashboard: "Dashboard", foerdermittel: "Fördermittel", automatisierung: "Automatisierung", lernpfad: "Lernpfad" };
 
   return (
     <div style={{
@@ -587,6 +588,9 @@ export default function Portfolio() {
 
       {/* PROZESSAUTOMATISIERUNG */}
       <Automatisierung />
+
+      {/* LERNPFAD */}
+      <Lernpfad />
 
       {/* FOOTER */}
       <footer style={{
