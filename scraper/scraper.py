@@ -105,19 +105,20 @@ EXCLUSION_KEYWORDS = [
     # Junior / Einstieg
     r"\bjunior\b", r"\bwerkstudent\b", r"\bpraktik\w*\b", r"\btrainee\b",
     # Schule / Bildung
-    r"\blehrer\b", r"\blehrkraft\b", r"\bschule\b", r"\bschul\w*",
-    r"\brektor\b", r"\bkonrektor\b", r"\bschulleitung\b",
+    r"\blehrer\w*\b", r"\blehrkraft\b", r"\bschule\b", r"\bschul\w*",
+    r"\brektor\w*\b", r"\bkonrektor\w*\b", r"\bschulleiter\w*\b", r"\bschulleitung\b",
     r"schulrektor", r"sekundarschul", r"grundschul", r"oberschul",
     r"\bbildung\b", r"\bfortbildung\b", r"fortbildung\w*koordinat",
     # Soziales / Pflege / Medizin
-    r"\berzieher\b", r"\bpädagog\b", r"\bkita\b",
-    r"\bpflege\b", r"\bkrankenpflege\b",
+    r"\berzieher\w*\b", r"\bpädagog\b", r"\bkita\b",
+    r"\bpflege\w*\b", r"\bkrankenpflege\b", r"\bpfleger\w*\b",
     r"\barzt\b", r"\bärztin\b", r"\bmedizin\w*\b",
-    r"\bsozialarbeit", r"\bsozialpädagog",
-    # Facility / Service
+    r"\bsozialarbeit\w*\b", r"\bsozialpädagog",
+    # Facility / Service / Transport
     r"\bhaus(meister|wart|techniker)\b",
     r"\breinigung\b", r"\bküche\b", r"\bkoch\b",
     r"\bsekretär\b", r"\bempfang\b",
+    r"\bfahrer\w*\b", r"\bbusfahrer\b", r"\blkw.?fahrer\b",
     # IT-Security (nicht Controlling)
     r"informationssicherheit",
     # Vertrieb / Finanzberatung B2C (kein Controlling)
@@ -149,6 +150,115 @@ BERLIN_PATTERNS = [
     r"\bberlin\b",
     r"\bpotsdam\b",
 ]
+
+# ---------------------------------------------------------------------------
+# Verwandte Berufe – Suchbegriffe & eigenes Scoring
+# ---------------------------------------------------------------------------
+RELATED_SEARCH_QUERIES = [
+    "Business Analyst",
+    "Data Analyst",
+    "Projektmanager öffentliche Verwaltung",
+    "Finanzreferent",
+    "Grants Manager",
+    "Reporting Analyst",
+    "Compliance Manager",
+    "Risikomanagement",
+]
+
+RELATED_SCORING_RULES: dict[str, list[tuple[str, int]]] = {
+    "kernkompetenz": [
+        (r"business\s?analyst", 15),
+        (r"data\s?analyst", 15),
+        (r"projektmanag", 12),
+        (r"finanzreferent", 15),
+        (r"grants?\s?manag", 15),
+        (r"reporting\s?analyst", 15),
+        (r"compliance", 12),
+        (r"risikomanag", 12),
+        (r"fördermittel", 12),
+        (r"zuwendungsrecht", 10),
+        (r"budgetierung", 10),
+        (r"kostenrechnung", 8),
+        (r"berichtswesen", 8),
+        (r"reporting", 8),
+        (r"datenanalyse|data\s?analysis", 10),
+        (r"finanzcontroll", 10),
+        (r"controll(ing|er|erin)", 8),
+    ],
+    "branche": [
+        (r"öffentlich\w*\s*(auftraggeber|verwaltung|dienst|hand)", 15),
+        (r"ngo|non[-\s]?profit", 12),
+        (r"stiftung", 12),
+        (r"gemeinnützig", 10),
+        (r"ggmbh|e\.?\s?v\.", 8),
+        (r"bundesministerium|bund\b", 10),
+        (r"ministerium", 10),
+        (r"forschung", 8),
+    ],
+    "tools": [
+        (r"\bsap\b", 8),
+        (r"power\s?bi|tableau", 10),
+        (r"\bsql\b", 10),
+        (r"python", 10),
+        (r"\bexcel\b", 5),
+        (r"\betl\b", 8),
+        (r"machine\s?learning|ml\b", 6),
+    ],
+    "level": [
+        (r"senior", 10),
+        (r"erfahren\w*", 6),
+        (r"lead|leitung", 8),
+        (r"referent", 5),
+    ],
+}
+
+
+def score_related_job(job: Job) -> tuple[int, str, list[str]]:
+    """Scoring für verwandte Berufe (Business Analyst, Grants Manager etc.)."""
+    title_lower = job.title.lower()
+    text = f"{job.title} {job.description}".lower()
+    total = 0
+    tags = ["verwandt"]
+
+    for pattern in EXCLUSION_KEYWORDS:
+        if re.search(pattern, title_lower):
+            return 0, "rot", ["verwandt", "ausschluss"]
+
+    loc_lower = job.location.lower()
+    is_berlin = any(re.search(p, loc_lower) for p in BERLIN_PATTERNS)
+    if not is_berlin:
+        return 0, "rot", ["verwandt", "kein-berlin"]
+
+    for category, rules in RELATED_SCORING_RULES.items():
+        for pattern, points in rules:
+            if re.search(pattern, text, re.IGNORECASE):
+                total += points
+                tag = re.sub(r"[^a-zäöü0-9]", "", pattern.split("(")[0][:20])
+                tags.append(tag)
+
+    for pattern, points in PENALTY_RULES:
+        if re.search(pattern, text, re.IGNORECASE):
+            total += points
+            tags.append("penalty")
+
+    # Wunscharbeitgeber-Bonus
+    company_text = f"{job.company} {job.title}".lower()
+    for pattern in WUNSCH_ARBEITGEBER:
+        if re.search(pattern, company_text, re.IGNORECASE):
+            total += 10
+            tags.append("wunscharbeitgeber")
+            break
+
+    total = max(0, min(100, total))
+
+    if total >= 20:
+        label = "gruen"
+    elif total >= 10:
+        label = "gelb"
+    else:
+        label = "rot"
+
+    return total, label, tags
 
 
 # ---------------------------------------------------------------------------
@@ -625,6 +735,201 @@ def scrape_bund(page: Page, query: str) -> list[Job]:
 
 
 # ---------------------------------------------------------------------------
+# Scraper: Arbeitsagentur (Jobsuche)
+# ---------------------------------------------------------------------------
+def scrape_arbeitsagentur(page: Page, query: str, max_pages: int = 2) -> list[Job]:
+    jobs = []
+    for pg in range(max_pages):
+        url = (
+            f"https://www.arbeitsagentur.de/jobsuche/suche"
+            f"?angebotsart=1&was={quote(query)}&wo=Berlin&umkreis=25&page={pg + 1}"
+        )
+        log.info(f"[Arbeitsagentur] {url}")
+
+        soup = get_page_soup(page, url, wait_selector="div[data-testid='jobPosting']", wait_ms=5000)
+
+        cards = soup.select("div[data-testid='jobPosting'], li.ergebnisliste-item, article")
+        if not cards:
+            cards = soup.select("a[href*='jobdetails']")
+
+        for card in cards:
+            try:
+                if card.name == "a":
+                    title = card.get_text(strip=True)
+                    href = card.get("href", "")
+                else:
+                    link = card.select_one("a[href*='jobdetails'], a[href*='jobsuche'], h2 a, a")
+                    if not link:
+                        continue
+                    title = link.get_text(strip=True)
+                    href = link.get("href", "")
+
+                if not title or len(title) < 5:
+                    continue
+                if not href:
+                    continue
+                if not href.startswith("http"):
+                    href = "https://www.arbeitsagentur.de" + href
+
+                company_tag = card.select_one(
+                    "span[data-testid='company'], div.company, span.arbeitgeber"
+                )
+                company = company_tag.get_text(strip=True) if company_tag else ""
+
+                location_tag = card.select_one(
+                    "span[data-testid='location'], div.location, span.arbeitsort"
+                )
+                location = location_tag.get_text(strip=True) if location_tag else "Berlin"
+
+                jobs.append(Job(
+                    source="arbeitsagentur",
+                    title=title[:300],
+                    company=company[:200],
+                    location=location[:200],
+                    url=href.split("?")[0][:500],
+                ))
+            except Exception as e:
+                log.debug(f"Arbeitsagentur parse error: {e}")
+
+        time.sleep(2)
+
+    log.info(f"[Arbeitsagentur] {len(jobs)} Jobs für '{query}'")
+    return jobs
+
+
+# ---------------------------------------------------------------------------
+# Scraper: wir-in-berlin.de
+# ---------------------------------------------------------------------------
+def scrape_wir_in_berlin(page: Page, query: str) -> list[Job]:
+    jobs = []
+    url = f"https://www.wir-in-berlin.de/stellenangebote?q={quote(query)}"
+    log.info(f"[wir-in-berlin] {url}")
+
+    soup = get_page_soup(page, url, wait_ms=5000)
+
+    links = soup.select("a[href*='stellenangebot'], a[href*='stelle'], a[href*='job']")
+    cards = soup.select("div.job-item, div.stellenangebot, li.result, article")
+
+    seen_urls = set()
+
+    for link in links:
+        try:
+            title = link.get_text(strip=True)
+            href = link.get("href", "")
+            if not title or len(title) < 5 or not href:
+                continue
+            if not href.startswith("http"):
+                href = "https://www.wir-in-berlin.de" + href
+            if href in seen_urls:
+                continue
+            seen_urls.add(href)
+
+            jobs.append(Job(
+                source="wir-in-berlin",
+                title=title[:300],
+                company="",
+                location="Berlin",
+                url=href[:500],
+            ))
+        except Exception as e:
+            log.debug(f"wir-in-berlin parse error: {e}")
+
+    for card in cards:
+        try:
+            a_tag = card.select_one("a")
+            if not a_tag:
+                continue
+            title = a_tag.get_text(strip=True)
+            href = a_tag.get("href", "")
+            if not title or len(title) < 5 or not href:
+                continue
+            if not href.startswith("http"):
+                href = "https://www.wir-in-berlin.de" + href
+            if href in seen_urls:
+                continue
+            seen_urls.add(href)
+
+            company_tag = card.select_one("span.company, div.employer, span.arbeitgeber")
+            company = company_tag.get_text(strip=True) if company_tag else ""
+
+            jobs.append(Job(
+                source="wir-in-berlin",
+                title=title[:300],
+                company=company[:200],
+                location="Berlin",
+                url=href[:500],
+            ))
+        except Exception:
+            pass
+
+    log.info(f"[wir-in-berlin] {len(jobs)} Jobs für '{query}'")
+    return jobs
+
+
+# ---------------------------------------------------------------------------
+# Scraper: jobvector.de (Controlling Berlin)
+# ---------------------------------------------------------------------------
+def scrape_jobvector(page: Page, query: str, max_pages: int = 2) -> list[Job]:
+    jobs = []
+    for pg in range(1, max_pages + 1):
+        url = (
+            f"https://www.jobvector.de/jobs/{quote(query)}"
+            f"?locname=Berlin&radius=30&page={pg}"
+        )
+        log.info(f"[jobvector] {url}")
+
+        soup = get_page_soup(page, url, wait_selector="div.job-item", wait_ms=4000)
+
+        cards = soup.select("div.job-item, article.job, div.search-result, li.result-item")
+        if not cards:
+            cards = soup.select("a[href*='/stelle/'], a[href*='/job/']")
+
+        for card in cards:
+            try:
+                if card.name == "a":
+                    title = card.get_text(strip=True)
+                    href = card.get("href", "")
+                else:
+                    link = card.select_one("a[href*='/stelle/'], a[href*='/job/'], h2 a, a")
+                    if not link:
+                        continue
+                    title = link.get_text(strip=True)
+                    href = link.get("href", "")
+
+                if not title or len(title) < 5:
+                    continue
+                if not href:
+                    continue
+                if not href.startswith("http"):
+                    href = "https://www.jobvector.de" + href
+
+                company_tag = card.select_one(
+                    "span.company-name, div.company, span.employer"
+                )
+                company = company_tag.get_text(strip=True) if company_tag else ""
+
+                location_tag = card.select_one(
+                    "span.location, div.location, span.job-location"
+                )
+                location = location_tag.get_text(strip=True) if location_tag else "Berlin"
+
+                jobs.append(Job(
+                    source="jobvector",
+                    title=title[:300],
+                    company=company[:200],
+                    location=location[:200],
+                    url=href.split("?")[0][:500],
+                ))
+            except Exception as e:
+                log.debug(f"jobvector parse error: {e}")
+
+        time.sleep(2)
+
+    log.info(f"[jobvector] {len(jobs)} Jobs für '{query}'")
+    return jobs
+
+
+# ---------------------------------------------------------------------------
 # Deduplizierung
 # ---------------------------------------------------------------------------
 def deduplicate(jobs: list[Job]) -> list[Job]:
@@ -675,7 +980,8 @@ def upload_to_supabase(jobs: list[Job], supabase: Client) -> int:
 def main():
     log.info("=" * 60)
     log.info("Berliner Arbeitsmarkt-Dashboard – Scraper Start")
-    log.info("Quellen: StepStone, Indeed, Interamt, berlin.de, bund.de")
+    log.info("Quellen: StepStone, Indeed, Interamt, berlin.de, bund.de,")
+    log.info("         Arbeitsagentur, wir-in-berlin, jobvector")
     log.info("=" * 60)
 
     if not SUPABASE_URL or not SUPABASE_KEY:
@@ -723,11 +1029,29 @@ def main():
             all_jobs.extend(scrape_bund(page, query))
             time.sleep(1)
 
+        # --- Arbeitsagentur ---
+        aa_queries = ["Controller", "Projektcontrolling", "Finanzcontroller"]
+        for query in aa_queries:
+            all_jobs.extend(scrape_arbeitsagentur(page, query, max_pages=2))
+            time.sleep(1)
+
+        # --- wir-in-berlin.de ---
+        wib_queries = ["Controller", "Controlling", "Finanzcontrolling"]
+        for query in wib_queries:
+            all_jobs.extend(scrape_wir_in_berlin(page, query))
+            time.sleep(1)
+
+        # --- jobvector.de ---
+        jv_queries = ["Controller", "Controlling"]
+        for query in jv_queries:
+            all_jobs.extend(scrape_jobvector(page, query, max_pages=2))
+            time.sleep(1)
+
         # Deduplizierung
         all_jobs = deduplicate(all_jobs)
-        log.info(f"Gesamt: {len(all_jobs)} unique Jobs gefunden")
+        log.info(f"Gesamt: {len(all_jobs)} unique Controller-Jobs gefunden")
 
-        # Beschreibungen laden + Scoring
+        # Beschreibungen laden + Scoring (Controller-Jobs)
         for i, job in enumerate(all_jobs):
             log.info(f"[{i+1}/{len(all_jobs)}] Details: {job.title[:60]}...")
             job.description = fetch_description_pw(page, job.url)
@@ -738,6 +1062,37 @@ def main():
             log.info(f"  {emoji} Score: {job.score} | {job.company} | {job.title[:60]}")
             time.sleep(0.5)
 
+        # === Verwandte Berufe ===
+        log.info("\n" + "=" * 60)
+        log.info("Verwandte Berufe – Scraping")
+        log.info("=" * 60)
+        related_jobs: list[Job] = []
+
+        for query in RELATED_SEARCH_QUERIES:
+            log.info(f"\n--- Verwandt: '{query}' ---")
+            related_jobs.extend(scrape_stepstone(page, query, max_pages=1))
+            related_jobs.extend(scrape_indeed(page, query, max_pages=1))
+            related_jobs.extend(scrape_interamt(page, query, max_pages=1))
+            related_jobs.extend(scrape_arbeitsagentur(page, query, max_pages=1))
+            time.sleep(1)
+
+        related_jobs = deduplicate(related_jobs)
+        # Entferne Jobs, die schon in Controller-Liste sind
+        controller_urls = {j.url.split("?")[0].rstrip("/") for j in all_jobs}
+        related_jobs = [j for j in related_jobs if j.url.split("?")[0].rstrip("/") not in controller_urls]
+        log.info(f"Verwandte Berufe: {len(related_jobs)} unique Jobs")
+
+        for i, job in enumerate(related_jobs):
+            log.info(f"[Verwandt {i+1}/{len(related_jobs)}] {job.title[:60]}...")
+            job.description = fetch_description_pw(page, job.url)
+            job.salary_min, job.salary_max = parse_salary(job.salary_raw)
+            job.score, job.score_label, job.tags = score_related_job(job)
+
+            emoji = {"gruen": "🟢", "gelb": "🟡", "rot": "🔴"}.get(job.score_label, "⚪")
+            log.info(f"  {emoji} Score: {job.score} | {job.company} | {job.title[:60]}")
+            time.sleep(0.5)
+
+        all_jobs.extend(related_jobs)
         browser.close()
 
     # Upload
@@ -745,9 +1100,12 @@ def main():
     log.info(f"Upload: {count} Jobs in Supabase")
 
     # Zusammenfassung
+    controller = [j for j in all_jobs if "verwandt" not in j.tags]
+    verwandt = [j for j in all_jobs if "verwandt" in j.tags]
     gruen = sum(1 for j in all_jobs if j.score_label == "gruen")
     gelb = sum(1 for j in all_jobs if j.score_label == "gelb")
     rot = sum(1 for j in all_jobs if j.score_label == "rot")
+    log.info(f"Controller-Jobs: {len(controller)} | Verwandte Berufe: {len(verwandt)}")
     log.info(f"Ergebnis: 🟢 {gruen} | 🟡 {gelb} | 🔴 {rot}")
     log.info("Fertig!")
 

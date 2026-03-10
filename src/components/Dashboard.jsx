@@ -18,6 +18,9 @@ const SOURCE_LABELS = {
   interamt: "Interamt",
   "berlin.de": "berlin.de",
   "bund.de": "bund.de",
+  arbeitsagentur: "Arbeitsagentur",
+  "wir-in-berlin": "wir-in-berlin",
+  jobvector: "jobvector",
 };
 
 const STATUS_CONFIG = {
@@ -108,7 +111,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("alle");
   const [sourceFilter, setSourceFilter] = useState("alle");
-  const [tab, setTab] = useState("jobs"); // "jobs" | "beworben"
+  const [tab, setTab] = useState("jobs"); // "jobs" | "verwandt" | "beworben"
   const [updatingId, setUpdatingId] = useState(null);
   const sectionRef = useRef(null);
   useInView(sectionRef);
@@ -157,7 +160,16 @@ export default function Dashboard() {
     setUpdatingId(null);
   }
 
-  const filteredJobs = jobs.filter((j) => {
+  const controllerJobs = jobs.filter((j) => !(j.tags || []).includes("verwandt"));
+  const verwandteJobs = jobs.filter((j) => (j.tags || []).includes("verwandt"));
+
+  const filteredJobs = controllerJobs.filter((j) => {
+    if (filter !== "alle" && j.score_label !== filter) return false;
+    if (sourceFilter !== "alle" && j.source !== sourceFilter) return false;
+    return true;
+  });
+
+  const filteredVerwandt = verwandteJobs.filter((j) => {
     if (filter !== "alle" && j.score_label !== filter) return false;
     if (sourceFilter !== "alle" && j.source !== sourceFilter) return false;
     return true;
@@ -261,7 +273,8 @@ export default function Dashboard() {
           {/* Tabs: Jobs | Beworben */}
           <div style={{ display: "flex", gap: 0, marginBottom: 24, borderBottom: "1px solid #eee" }}>
             {[
-              { key: "jobs", label: "Alle Jobs", count: jobs.length },
+              { key: "jobs", label: "Controller-Jobs", count: controllerJobs.length },
+              { key: "verwandt", label: "Verwandte Berufe", count: verwandteJobs.length },
               { key: "beworben", label: "Beworben", count: beworbenJobs.length },
             ].map((t) => (
               <button
@@ -323,7 +336,7 @@ export default function Dashboard() {
                   </button>
                 ))}
                 <span style={{ width: 16 }} />
-                {["alle", "stepstone", "indeed", "interamt", "berlin.de", "bund.de"].map((s) => (
+                {["alle", "stepstone", "indeed", "interamt", "berlin.de", "bund.de", "arbeitsagentur", "wir-in-berlin", "jobvector"].map((s) => (
                   <button
                     key={s}
                     onClick={() => setSourceFilter(s)}
@@ -448,6 +461,150 @@ export default function Dashboard() {
               {filteredJobs.length > 50 && (
                 <div style={{ textAlign: "center", padding: 20, fontSize: 12, color: "#aaa", fontFamily: "'Space Mono', monospace" }}>
                   + {filteredJobs.length - 50} weitere Jobs
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Tab: Verwandte Berufe */}
+          {tab === "verwandt" && (
+            <>
+              {/* Filter */}
+              <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap", alignItems: "center" }}>
+                <span style={{ ...monoLabel, marginRight: 8 }}>Filter:</span>
+                {[
+                  { key: "alle", label: "Alle" },
+                  { key: "gruen", label: "\u{1F7E2} Top-Match" },
+                  { key: "gelb", label: "\u{1F7E1} Interessant" },
+                  { key: "rot", label: "\u{1F534} Wenig relevant" },
+                ].map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setFilter(f.key)}
+                    style={{
+                      background: filter === f.key ? "#111" : "#fff",
+                      color: filter === f.key ? "#fff" : "#666",
+                      border: "1px solid #ddd",
+                      padding: "6px 14px",
+                      fontSize: 12,
+                      fontFamily: "'DM Sans', sans-serif",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{
+                padding: "16px 20px",
+                marginBottom: 20,
+                border: "1px solid #eee",
+                background: "rgba(0,140,70,0.02)",
+                fontSize: 13,
+                color: "#666",
+                lineHeight: 1.7,
+              }}>
+                Business Analyst, Data Analyst, Projektmanager (oeff. Hand), Finanzreferent NGO/Stiftung, Grants Manager, Reporting Analyst, Compliance & Risikomanagement
+              </div>
+
+              <div style={{ ...monoLabel, fontSize: 10, marginBottom: 12 }}>
+                {filteredVerwandt.length} Ergebnisse
+              </div>
+
+              <div style={{ display: "grid", gap: 8 }}>
+                {filteredVerwandt.slice(0, 50).map((job) => (
+                  <div
+                    key={job.id}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "36px 1fr 120px 80px 90px",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: "14px 16px",
+                      border: `1px solid ${job.beworben ? "rgba(0,102,204,0.2)" : "#eee"}`,
+                      background: job.beworben ? "rgba(0,102,204,0.02)" : "#fff",
+                      transition: "border-color 0.2s, box-shadow 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = SCORE_COLOR[job.score_label] || "#ddd";
+                      e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.04)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = job.beworben ? "rgba(0,102,204,0.2)" : "#eee";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                  >
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 16 }}>{SCORE_EMOJI[job.score_label] || "\u26AA"}</div>
+                      <div style={{ fontSize: 9, fontFamily: "'Space Mono', monospace", color: SCORE_COLOR[job.score_label] || "#999", fontWeight: 700 }}>
+                        {job.score}
+                      </div>
+                    </div>
+                    <a
+                      href={job.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ minWidth: 0, textDecoration: "none", color: "inherit" }}
+                    >
+                      <div style={{ fontSize: 14, fontWeight: 500, color: "#222", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {job.title}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#999", marginTop: 2 }}>
+                        {job.company} · {job.location}
+                      </div>
+                    </a>
+                    <div style={{ fontSize: 10, fontFamily: "'Space Mono', monospace", color: "#bbb", textAlign: "center", border: "1px solid #f0f0f0", padding: "2px 6px" }}>
+                      {SOURCE_LABELS[job.source] || job.source}
+                    </div>
+                    {job.beworben && (
+                      <div style={{
+                        fontSize: 10,
+                        fontFamily: "'Space Mono', monospace",
+                        fontWeight: 600,
+                        color: STATUS_CONFIG[job.status]?.color || "#999",
+                        background: STATUS_CONFIG[job.status]?.bg || "#f5f5f5",
+                        padding: "3px 8px",
+                        textAlign: "center",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                      }}>
+                        {STATUS_CONFIG[job.status]?.label || job.status}
+                      </div>
+                    )}
+                    {!job.beworben ? (
+                      <button
+                        onClick={() => markBeworben(job.id)}
+                        disabled={updatingId === job.id}
+                        style={{
+                          background: "#0066cc",
+                          color: "#fff",
+                          border: "none",
+                          padding: "6px 12px",
+                          fontSize: 11,
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontWeight: 600,
+                          cursor: updatingId === job.id ? "wait" : "pointer",
+                          opacity: updatingId === job.id ? 0.6 : 1,
+                          transition: "opacity 0.2s, transform 0.1s",
+                          whiteSpace: "nowrap",
+                        }}
+                        onMouseEnter={(e) => { if (updatingId !== job.id) e.target.style.transform = "translateY(-1px)"; }}
+                        onMouseLeave={(e) => { e.target.style.transform = "translateY(0)"; }}
+                      >
+                        {updatingId === job.id ? "..." : "Bewerben"}
+                      </button>
+                    ) : (
+                      <div style={{ width: 1 }} />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {filteredVerwandt.length > 50 && (
+                <div style={{ textAlign: "center", padding: 20, fontSize: 12, color: "#aaa", fontFamily: "'Space Mono', monospace" }}>
+                  + {filteredVerwandt.length - 50} weitere Jobs
                 </div>
               )}
             </>

@@ -6,11 +6,12 @@ const SECTIONS = ["hero", "profil", "projekte", "skills", "dashboard"];
 const projects = [
   {
     title: "Berliner Arbeitsmarkt-Dashboard",
-    status: "In Entwicklung",
+    status: "Live",
     tags: ["Power BI", "DAX", "Python", "Data Visualization"],
     description:
       "Interaktives Dashboard zur Analyse von Controller-Stellenanzeigen in Berlin. Visualisierung von Gehaltsstrukturen, gefragten Skills und Branchentrends.",
     icon: "📊",
+    link: "dashboard",
   },
   {
     title: "Fördermittel-Controlling Pipeline",
@@ -450,6 +451,7 @@ export default function Portfolio() {
           {projects.map((project, i) => (
             <div
               key={i}
+              onClick={() => project.link && scrollTo(project.link)}
               style={{
                 border: "1px solid #eee",
                 padding: 32,
@@ -474,8 +476,8 @@ export default function Portfolio() {
                   fontFamily: "'Space Mono', monospace",
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
-                  color: project.status === "In Entwicklung" ? "#008c46" : "#cc7700",
-                  background: project.status === "In Entwicklung" ? "rgba(0,140,70,0.06)" : "rgba(204,119,0,0.06)",
+                  color: project.status === "Live" ? "#008c46" : "#cc7700",
+                  background: project.status === "Live" ? "rgba(0,140,70,0.06)" : "rgba(204,119,0,0.06)",
                   padding: "4px 10px",
                   whiteSpace: "nowrap",
                 }}>
