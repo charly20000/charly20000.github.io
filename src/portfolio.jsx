@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import Dashboard from "./components/Dashboard";
 import FoerdermittelPipeline from "./components/FoerdermittelPipeline";
+import Automatisierung from "./components/Automatisierung";
 
-const SECTIONS = ["hero", "profil", "projekte", "skills", "dashboard", "foerdermittel"];
+const SECTIONS = ["hero", "profil", "projekte", "skills", "dashboard", "foerdermittel", "automatisierung"];
 
 const projects = [
   {
@@ -24,12 +25,13 @@ const projects = [
     link: "foerdermittel",
   },
   {
-    title: "Portfolio-Optimierung mit Python",
-    status: "Konzept",
-    tags: ["Python", "Finance", "Machine Learning", "Risk Analysis"],
+    title: "Prozessautomatisierung Fördermittel",
+    status: "Live",
+    tags: ["Prozessanalyse", "Automatisierung", "ROI", "Zuwendungsrecht"],
     description:
-      "Quantitative Analyse und Optimierung von Investmentportfolios mit modernen Data-Science-Methoden.",
-    icon: "📈",
+      "Analyse von 15 manuellen Prozessen im Fördermittel-Controlling mit konkreten Automatisierungsvorschlägen. 93% Effizienzgewinn, ~47 Arbeitstage Einsparung pro Projekt/Jahr.",
+    icon: "🔄",
+    link: "automatisierung",
   },
 ];
 
@@ -155,7 +157,7 @@ export default function Portfolio() {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const navLabels = { hero: "Start", profil: "Profil", projekte: "Projekte", skills: "Skills", dashboard: "Dashboard", foerdermittel: "Fördermittel" };
+  const navLabels = { hero: "Start", profil: "Profil", projekte: "Projekte", skills: "Skills", dashboard: "Dashboard", foerdermittel: "Fördermittel", automatisierung: "Automatisierung" };
 
   return (
     <div style={{
@@ -582,6 +584,9 @@ export default function Portfolio() {
 
       {/* FÖRDERMITTEL-PIPELINE */}
       <FoerdermittelPipeline />
+
+      {/* PROZESSAUTOMATISIERUNG */}
+      <Automatisierung />
 
       {/* FOOTER */}
       <footer style={{
