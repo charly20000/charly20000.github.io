@@ -69,7 +69,7 @@ const skillCategories = [
   {
     category: "Data & Technologie",
     skills: [
-      { name: "Power BI / DAX", level: 40, learning: true },
+      { name: "Power BI / DAX", level: 40 },
       { name: "Python", level: 60 },
       { name: "SQL", level: 65 },
       { name: "Machine Learning", level: 45 },
