@@ -13,6 +13,12 @@ from urllib.parse import quote
 from dataclasses import dataclass, field
 from typing import Optional
 
+import requests as req_lib
+import urllib3
+
+# Suppress SSL warnings for Arbeitsagentur API (kein gültiges TLS-Zertifikat)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright, Page, Browser
@@ -571,26 +577,67 @@ def scrape_interamt(page: Page, query: str, max_pages: int = 2) -> list[Job]:
         )
         log.info(f"[Interamt] {url}")
 
-        soup = get_page_soup(page, url, wait_selector="div.stellenangebot", wait_ms=4000)
+        soup = get_page_soup(page, url, wait_ms=6000)
 
+        # Interamt rendert Ergebnisse als Links zu Einzelstellen
+        # Verschiedene Selektoren für verschiedene Layouts
         cards = soup.select("div.stellenangebot, div.result-item, tr.result-row")
         if not cards:
-            # Fallback: Links mit Stellenangebot-URLs
-            cards = soup.select("a[href*='/koop/app/stelle/']")
+            cards = soup.select("div[class*='stellen'], div[class*='treffer'], div[class*='result']")
 
+        # Fallback: Alle Links die auf /koop/app/stelle? zeigen
+        stelle_links = soup.select("a[href*='/koop/app/stelle?']")
+        if not cards and not stelle_links:
+            # Zweiter Fallback: alle Links im main-Bereich
+            main = soup.select_one("main, div#content, div[role='main'], div.content")
+            if main:
+                stelle_links = main.select("a[href*='stelle']")
+
+        # Verarbeite Stellen-Links
+        seen_urls = set()
+        for link in stelle_links:
+            try:
+                title = link.get_text(strip=True)
+                href = link.get("href", "")
+                if not title or len(title) < 5 or not href:
+                    continue
+                if not href.startswith("http"):
+                    href = "https://www.interamt.de" + href
+                if href in seen_urls:
+                    continue
+                seen_urls.add(href)
+
+                # Versuche Arbeitgeber aus dem umgebenden Element zu extrahieren
+                parent = link.find_parent(["div", "tr", "li"])
+                company = ""
+                if parent:
+                    company_tag = parent.select_one(
+                        "span.arbeitgeber, td.arbeitgeber, div.employer, "
+                        "span[class*='arbeitgeber'], span[class*='company']"
+                    )
+                    if company_tag:
+                        company = company_tag.get_text(strip=True)
+
+                jobs.append(Job(
+                    source="interamt",
+                    title=title[:300],
+                    company=company[:200],
+                    location="Berlin",
+                    url=href[:500],
+                ))
+            except Exception as e:
+                log.debug(f"Interamt parse error: {e}")
+
+        # Verarbeite Karten/Zeilen
         for card in cards:
             try:
-                if card.name == "a":
-                    title = card.get_text(strip=True)
-                    href = card.get("href", "")
-                else:
-                    link = card.select_one("a[href*='/stelle/'], a[href*='trefferliste']")
-                    if not link:
-                        link = card.select_one("a")
-                    if not link:
-                        continue
-                    title = link.get_text(strip=True)
-                    href = link.get("href", "")
+                link = card.select_one("a[href*='/stelle'], a[href*='trefferliste']")
+                if not link:
+                    link = card.select_one("a")
+                if not link:
+                    continue
+                title = link.get_text(strip=True)
+                href = link.get("href", "")
 
                 if not title or len(title) < 5:
                     continue
@@ -598,8 +645,14 @@ def scrape_interamt(page: Page, query: str, max_pages: int = 2) -> list[Job]:
                     continue
                 if not href.startswith("http"):
                     href = "https://www.interamt.de" + href
+                if href in seen_urls:
+                    continue
+                seen_urls.add(href)
 
-                company_tag = card.select_one("span.arbeitgeber, td.arbeitgeber, div.employer")
+                company_tag = card.select_one(
+                    "span.arbeitgeber, td.arbeitgeber, div.employer, "
+                    "span[class*='arbeitgeber'], span[class*='company']"
+                )
                 company = company_tag.get_text(strip=True) if company_tag else ""
 
                 jobs.append(Job(
@@ -626,13 +679,18 @@ def scrape_berlin_de(page: Page, query: str) -> list[Job]:
     url = f"https://www.berlin.de/karriereportal/stellensuche/?keyword={quote(query)}"
     log.info(f"[berlin.de] {url}")
 
-    soup = get_page_soup(page, url, wait_selector="div.stellenangebot", wait_ms=5000)
+    soup = get_page_soup(page, url, wait_ms=6000)
 
-    # Verschiedene mögliche Selektoren
-    cards = soup.select("div.block, li.result-item, tr, div.stellenangebot")
-    links = soup.select("a[href*='stellensuche/']")
+    seen_urls = set()
 
-    for link in links:
+    # Primär: Links die auf Stellen-Detailseiten zeigen
+    detail_links = soup.select(
+        "a[href*='stellensuche/'], "
+        "a[href*='karriereportal/stellen'], "
+        "a[href*='/karriereportal/']"
+    )
+
+    for link in detail_links:
         try:
             title = link.get_text(strip=True)
             if not title or len(title) < 5:
@@ -644,8 +702,15 @@ def scrape_berlin_de(page: Page, query: str) -> list[Job]:
                 href = "https://www.berlin.de" + href
 
             # Filtere Navigation-Links raus
-            if "/stellensuche/?" in href and "detail" not in href.lower():
+            if "keyword=" in href or href.endswith("/stellensuche/"):
                 continue
+            # Nur Detail-Links (nicht die Suchseite selbst)
+            if "/stellensuche/?" in href and "detail" not in href.lower() and "/stellen." not in href:
+                continue
+
+            if href in seen_urls:
+                continue
+            seen_urls.add(href)
 
             jobs.append(Job(
                 source="berlin.de",
@@ -657,7 +722,8 @@ def scrape_berlin_de(page: Page, query: str) -> list[Job]:
         except Exception as e:
             log.debug(f"berlin.de parse error: {e}")
 
-    # Auch generische Ergebnis-Links parsen
+    # Fallback: generische Ergebnis-Container
+    cards = soup.select("div.block, li.result-item, div.stellenangebot, div[class*='result']")
     for card in cards:
         try:
             a_tag = card.select_one("a")
@@ -671,10 +737,9 @@ def scrape_berlin_de(page: Page, query: str) -> list[Job]:
                 href = "https://www.berlin.de" + href
             if "karriereportal" not in href and "stellen" not in href:
                 continue
-
-            # Duplikat-Check innerhalb der Funktion
-            if any(j.url == href[:500] for j in jobs):
+            if href in seen_urls:
                 continue
+            seen_urls.add(href)
 
             jobs.append(Job(
                 source="berlin.de",
@@ -691,23 +756,36 @@ def scrape_berlin_de(page: Page, query: str) -> list[Job]:
 
 
 # ---------------------------------------------------------------------------
-# Scraper: bund.de (Bundesverwaltung)
+# Scraper: bund.de / service.bund.de (Bundesverwaltung)
 # ---------------------------------------------------------------------------
 def scrape_bund(page: Page, query: str) -> list[Job]:
     jobs = []
+    seen_urls = set()
+
+    # Methode 1: service.bund.de Stellensuche (neue URL-Struktur)
     url = (
-        f"https://www.service.bund.de/IMPORTE/Stellenangebote/editor/"
-        f"Stellenangebote/ergebnis.html"
-        f"?nn=4642046&suchbegriff={quote(query)}"
+        f"https://www.service.bund.de/Content/DE/Stellen/Suche/Formular.html"
+        f"?nn=4641514&suchbegriff={quote(query)}"
         f"&ort=Berlin&umkreis=25"
     )
     log.info(f"[bund.de] {url}")
 
-    soup = get_page_soup(page, url, wait_ms=5000)
+    soup = get_page_soup(page, url, wait_ms=6000)
 
-    # bund.de Ergebnisliste
-    rows = soup.select("div.result-list div.result-item, table.result-list tr, li.result-item")
-    links = soup.select("a[href*='Stellenangebote']")
+    # Ergebnisliste: verschiedene Selektoren
+    links = soup.select(
+        "a[href*='Stellenangebote'], "
+        "a[href*='stellenangebote'], "
+        "a[href*='/IMPORTE/'], "
+        "a[href*='stelle']"
+    )
+    # Auch generische Ergebnis-Container
+    result_divs = soup.select(
+        "div.result-list div, div.resultList div, "
+        "ul.result-list li, table.resultList tr, "
+        "div[class*='result'] div[class*='item'], "
+        "div[class*='treffer']"
+    )
 
     for link in links:
         try:
@@ -719,8 +797,12 @@ def scrape_bund(page: Page, query: str) -> list[Job]:
                 continue
             if not href.startswith("http"):
                 href = "https://www.service.bund.de" + href
-            if "ergebnis" in href or "suche" in href.lower():
+            # Filtere Navigations- und Such-Links raus
+            if any(x in href.lower() for x in ["formular", "ergebnis.html", "suche"]):
                 continue
+            if href in seen_urls:
+                continue
+            seen_urls.add(href)
 
             jobs.append(Job(
                 source="bund.de",
@@ -732,68 +814,147 @@ def scrape_bund(page: Page, query: str) -> list[Job]:
         except Exception as e:
             log.debug(f"bund.de parse error: {e}")
 
+    for div in result_divs:
+        try:
+            a_tag = div.select_one("a")
+            if not a_tag:
+                continue
+            title = a_tag.get_text(strip=True)
+            href = a_tag.get("href", "")
+            if not title or len(title) < 5 or not href:
+                continue
+            if not href.startswith("http"):
+                href = "https://www.service.bund.de" + href
+            if any(x in href.lower() for x in ["formular", "ergebnis", "suche"]):
+                continue
+            if href in seen_urls:
+                continue
+            seen_urls.add(href)
+
+            jobs.append(Job(
+                source="bund.de",
+                title=title[:300],
+                company="Bundesverwaltung",
+                location="Berlin",
+                url=href[:500],
+            ))
+        except Exception:
+            pass
+
+    # Methode 2: Fallback über alte URL
+    if len(jobs) == 0:
+        url2 = (
+            f"https://www.service.bund.de/IMPORTE/Stellenangebote/editor/"
+            f"Stellenangebote/ergebnis.html"
+            f"?nn=4642046&suchbegriff={quote(query)}"
+            f"&ort=Berlin&umkreis=25"
+        )
+        log.info(f"[bund.de fallback] {url2}")
+        soup2 = get_page_soup(page, url2, wait_ms=5000)
+
+        for link in soup2.select("a[href*='Stellenangebote']"):
+            try:
+                title = link.get_text(strip=True)
+                if not title or len(title) < 5:
+                    continue
+                href = link.get("href", "")
+                if not href:
+                    continue
+                if not href.startswith("http"):
+                    href = "https://www.service.bund.de" + href
+                if "ergebnis" in href or "suche" in href.lower():
+                    continue
+                if href in seen_urls:
+                    continue
+                seen_urls.add(href)
+
+                jobs.append(Job(
+                    source="bund.de",
+                    title=title[:300],
+                    company="Bundesverwaltung",
+                    location="Berlin",
+                    url=href[:500],
+                ))
+            except Exception as e:
+                log.debug(f"bund.de fallback parse error: {e}")
+
     log.info(f"[bund.de] {len(jobs)} Jobs für '{query}'")
     return jobs
 
 
 # ---------------------------------------------------------------------------
-# Scraper: Arbeitsagentur (Jobsuche)
+# Scraper: Arbeitsagentur (REST API – kein Playwright nötig)
 # ---------------------------------------------------------------------------
 def scrape_arbeitsagentur(page: Page, query: str, max_pages: int = 2) -> list[Job]:
+    """Nutzt die offizielle REST API der Bundesagentur für Arbeit."""
     jobs = []
-    for pg in range(max_pages):
-        url = (
-            f"https://www.arbeitsagentur.de/jobsuche/suche"
-            f"?angebotsart=1&was={quote(query)}&wo=Berlin&umkreis=25&page={pg + 1}"
-        )
-        log.info(f"[Arbeitsagentur] {url}")
+    api_url = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs"
+    headers = {
+        "X-API-Key": "jobboerse-jobsuche",
+        "User-Agent": "Mozilla/5.0 (compatible; JobDashboard/1.0)",
+    }
 
-        soup = get_page_soup(page, url, wait_selector="div[data-testid='jobPosting']", wait_ms=5000)
+    for pg in range(1, max_pages + 1):
+        params = {
+            "was": query,
+            "wo": "Berlin",
+            "umkreis": 25,
+            "page": pg,
+            "size": 25,
+            "angebotsart": 1,
+            "pav": "false",
+        }
+        log.info(f"[Arbeitsagentur API] query={query}, page={pg}")
 
-        cards = soup.select("div[data-testid='jobPosting'], li.ergebnisliste-item, article")
-        if not cards:
-            cards = soup.select("a[href*='jobdetails']")
+        try:
+            resp = req_lib.get(api_url, headers=headers, params=params, timeout=20, verify=False)
+            if resp.status_code != 200:
+                log.warning(f"[Arbeitsagentur API] HTTP {resp.status_code}")
+                continue
 
-        for card in cards:
-            try:
-                if card.name == "a":
-                    title = card.get_text(strip=True)
-                    href = card.get("href", "")
-                else:
-                    link = card.select_one("a[href*='jobdetails'], a[href*='jobsuche'], h2 a, a")
-                    if not link:
-                        continue
-                    title = link.get_text(strip=True)
-                    href = link.get("href", "")
+            data = resp.json()
+            stellenangebote = data.get("stellenangebote", [])
+            if not stellenangebote:
+                log.info(f"[Arbeitsagentur API] Keine Ergebnisse für '{query}' page {pg}")
+                break
 
+            for s in stellenangebote:
+                title = s.get("titel", "").strip()
                 if not title or len(title) < 5:
                     continue
-                if not href:
+
+                company = s.get("arbeitgeber", "").strip()
+                arbeitsort = s.get("arbeitsort", {})
+                location = arbeitsort.get("ort", "Berlin")
+                if arbeitsort.get("plz"):
+                    location = f"{location} ({arbeitsort['plz']})"
+
+                refnr = s.get("refnr", "")
+                hashid = s.get("hashId", "")
+                if hashid:
+                    url = f"https://www.arbeitsagentur.de/jobsuche/jobdetail/{hashid}"
+                elif refnr:
+                    url = f"https://www.arbeitsagentur.de/jobsuche/jobdetail/{refnr}"
+                else:
                     continue
-                if not href.startswith("http"):
-                    href = "https://www.arbeitsagentur.de" + href
-
-                company_tag = card.select_one(
-                    "span[data-testid='company'], div.company, span.arbeitgeber"
-                )
-                company = company_tag.get_text(strip=True) if company_tag else ""
-
-                location_tag = card.select_one(
-                    "span[data-testid='location'], div.location, span.arbeitsort"
-                )
-                location = location_tag.get_text(strip=True) if location_tag else "Berlin"
 
                 jobs.append(Job(
                     source="arbeitsagentur",
                     title=title[:300],
                     company=company[:200],
                     location=location[:200],
-                    url=href.split("?")[0][:500],
+                    url=url[:500],
                 ))
-            except Exception as e:
-                log.debug(f"Arbeitsagentur parse error: {e}")
 
-        time.sleep(2)
+            log.info(f"[Arbeitsagentur API] {len(stellenangebote)} Jobs auf Seite {pg}")
+            total = data.get("maxErgebnisse", 0)
+            if pg * 25 >= total:
+                break
+
+        except Exception as e:
+            log.warning(f"[Arbeitsagentur API] Fehler: {e}")
+
+        time.sleep(1)
 
     log.info(f"[Arbeitsagentur] {len(jobs)} Jobs für '{query}'")
     return jobs
@@ -807,52 +968,52 @@ def scrape_wir_in_berlin(page: Page, query: str) -> list[Job]:
     url = f"https://www.wir-in-berlin.de/stellenangebote?q={quote(query)}"
     log.info(f"[wir-in-berlin] {url}")
 
-    soup = get_page_soup(page, url, wait_ms=5000)
+    soup = get_page_soup(page, url, wait_ms=6000)
 
-    links = soup.select("a[href*='stellenangebot'], a[href*='stelle'], a[href*='job']")
-    cards = soup.select("div.job-item, div.stellenangebot, li.result, article")
+    # Debug: Seite loggen
+    page_text = soup.get_text(" ", strip=True)[:200]
+    log.info(f"[wir-in-berlin] Page preview: {page_text}")
 
     seen_urls = set()
 
-    for link in links:
+    # Breitere Selektor-Suche
+    all_links = soup.select("a[href]")
+    for link in all_links:
         try:
-            title = link.get_text(strip=True)
             href = link.get("href", "")
+            title = link.get_text(strip=True)
             if not title or len(title) < 5 or not href:
                 continue
+            # Nur Links die auf Stellen/Jobs zeigen
+            href_lower = href.lower()
+            if not any(kw in href_lower for kw in [
+                "stellenangebot", "stelle", "job", "karriere", "position"
+            ]):
+                continue
+            # Navigation/Menü-Links filtern
+            if any(kw in href_lower for kw in [
+                "login", "registr", "impressum", "datenschutz", "kontakt",
+                "agb", "cookie", "newsletter"
+            ]):
+                continue
+
             if not href.startswith("http"):
                 href = "https://www.wir-in-berlin.de" + href
             if href in seen_urls:
                 continue
             seen_urls.add(href)
 
-            jobs.append(Job(
-                source="wir-in-berlin",
-                title=title[:300],
-                company="",
-                location="Berlin",
-                url=href[:500],
-            ))
-        except Exception as e:
-            log.debug(f"wir-in-berlin parse error: {e}")
-
-    for card in cards:
-        try:
-            a_tag = card.select_one("a")
-            if not a_tag:
-                continue
-            title = a_tag.get_text(strip=True)
-            href = a_tag.get("href", "")
-            if not title or len(title) < 5 or not href:
-                continue
-            if not href.startswith("http"):
-                href = "https://www.wir-in-berlin.de" + href
-            if href in seen_urls:
-                continue
-            seen_urls.add(href)
-
-            company_tag = card.select_one("span.company, div.employer, span.arbeitgeber")
-            company = company_tag.get_text(strip=True) if company_tag else ""
+            # Firma aus Eltern-Element extrahieren
+            parent = link.find_parent(["div", "li", "article", "section"])
+            company = ""
+            if parent:
+                company_tag = parent.select_one(
+                    "span.company, div.employer, span.arbeitgeber, "
+                    "span[class*='company'], span[class*='employer'], "
+                    "div[class*='company'], p[class*='company']"
+                )
+                if company_tag:
+                    company = company_tag.get_text(strip=True)
 
             jobs.append(Job(
                 source="wir-in-berlin",
@@ -861,8 +1022,8 @@ def scrape_wir_in_berlin(page: Page, query: str) -> list[Job]:
                 location="Berlin",
                 url=href[:500],
             ))
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug(f"wir-in-berlin parse error: {e}")
 
     log.info(f"[wir-in-berlin] {len(jobs)} Jobs für '{query}'")
     return jobs
@@ -880,23 +1041,59 @@ def scrape_jobvector(page: Page, query: str, max_pages: int = 2) -> list[Job]:
         )
         log.info(f"[jobvector] {url}")
 
-        soup = get_page_soup(page, url, wait_selector="div.job-item", wait_ms=4000)
+        soup = get_page_soup(page, url, wait_ms=5000)
 
-        cards = soup.select("div.job-item, article.job, div.search-result, li.result-item")
+        # Debug: Log page preview
+        page_text = soup.get_text(" ", strip=True)[:200]
+        log.info(f"[jobvector] Page preview: {page_text}")
+
+        seen_urls = set()
+
+        # Breitere Selektoren
+        cards = soup.select(
+            "div.job-item, article.job, div.search-result, "
+            "li.result-item, div[class*='job'], div[class*='result'], "
+            "div[class*='listing']"
+        )
+
+        # Fallback: Links zu Stellenanzeigen
         if not cards:
-            cards = soup.select("a[href*='/stelle/'], a[href*='/job/']")
+            job_links = soup.select(
+                "a[href*='/stelle/'], a[href*='/job/'], "
+                "a[href*='/stellenanzeige/'], a[href*='/anzeige/']"
+            )
+            for link in job_links:
+                try:
+                    title = link.get_text(strip=True)
+                    href = link.get("href", "")
+                    if not title or len(title) < 5 or not href:
+                        continue
+                    if not href.startswith("http"):
+                        href = "https://www.jobvector.de" + href
+                    if href in seen_urls:
+                        continue
+                    seen_urls.add(href)
+
+                    jobs.append(Job(
+                        source="jobvector",
+                        title=title[:300],
+                        company="",
+                        location="Berlin",
+                        url=href.split("?")[0][:500],
+                    ))
+                except Exception as e:
+                    log.debug(f"jobvector link parse error: {e}")
 
         for card in cards:
             try:
-                if card.name == "a":
-                    title = card.get_text(strip=True)
-                    href = card.get("href", "")
-                else:
-                    link = card.select_one("a[href*='/stelle/'], a[href*='/job/'], h2 a, a")
-                    if not link:
-                        continue
-                    title = link.get_text(strip=True)
-                    href = link.get("href", "")
+                link = card.select_one(
+                    "a[href*='/stelle/'], a[href*='/job/'], "
+                    "a[href*='/stellenanzeige/'], h2 a, h3 a, a"
+                )
+                if not link:
+                    continue
+                title = link.get_text(strip=True)
+                href = link.get("href", "")
 
                 if not title or len(title) < 5:
                     continue
@@ -904,14 +1101,19 @@ def scrape_jobvector(page: Page, query: str, max_pages: int = 2) -> list[Job]:
                     continue
                 if not href.startswith("http"):
                     href = "https://www.jobvector.de" + href
+                if href in seen_urls:
+                    continue
+                seen_urls.add(href)
 
                 company_tag = card.select_one(
-                    "span.company-name, div.company, span.employer"
+                    "span.company-name, div.company, span.employer, "
+                    "span[class*='company'], div[class*='company']"
                 )
                 company = company_tag.get_text(strip=True) if company_tag else ""
 
                 location_tag = card.select_one(
-                    "span.location, div.location, span.job-location"
+                    "span.location, div.location, span.job-location, "
+                    "span[class*='location'], div[class*='location']"
                 )
                 location = location_tag.get_text(strip=True) if location_tag else "Berlin"
 
@@ -1100,6 +1302,15 @@ def main():
     # Upload
     count = upload_to_supabase(all_jobs, supabase)
     log.info(f"Upload: {count} Jobs in Supabase")
+
+    # Diagnose: Jobs pro Quelle
+    from collections import Counter
+    source_counts = Counter(j.source for j in all_jobs)
+    log.info("=" * 40)
+    log.info("DIAGNOSE: Jobs pro Quelle")
+    for src, cnt in source_counts.most_common():
+        log.info(f"  {src}: {cnt}")
+    log.info("=" * 40)
 
     # Zusammenfassung
     controller = [j for j in all_jobs if "verwandt" not in j.tags]
