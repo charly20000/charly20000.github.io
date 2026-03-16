@@ -5,7 +5,7 @@ import Automatisierung from "./components/Automatisierung";
 import BeschaffungsOptimierung from "./components/BeschaffungsOptimierung";
 import SanierungsRechner from "./components/SanierungsRechner";
 
-const SECTIONS = ["hero", "profil", "projekte", "skills", "dashboard", "foerdermittel", "automatisierung", "beschaffung", "sanierung"];
+const SECTIONS = ["hero", "profil", "projekte", "skills", "mehrwert", "dashboard", "foerdermittel", "automatisierung", "beschaffung", "sanierung"];
 
 const projects = [
   {
@@ -59,30 +59,30 @@ const skillCategories = [
   {
     category: "Controlling & Finance",
     skills: [
-      { name: "Projektcontrolling", level: 95 },
-      { name: "Fördermittelmanagement", level: 90 },
-      { name: "Budgetierung & Reporting", level: 90 },
-      { name: "Deckungsbeitragsrechnung", level: 85 },
-      { name: "Investitionsanalyse", level: 80 },
+      { name: "Projektcontrolling", level: 95, context: "15 Jahre, Krones AG + VDI/VDE-IT" },
+      { name: "Fördermittelmanagement", level: 90, context: "BMBF/BMWK, NKBF 2017, profi-Online" },
+      { name: "Budgetierung & Reporting", level: 90, context: "SAP CO/FI, 6 Jahre Krones AG" },
+      { name: "Deckungsbeitragsrechnung", level: 85, context: "Life Cycle Service, Maschinenbau" },
+      { name: "Investitionsanalyse", level: 80, context: "Immobilien + Industrie" },
     ],
   },
   {
     category: "Data & Technologie",
     skills: [
-      { name: "Power BI / DAX", level: 40 },
-      { name: "Python", level: 60 },
-      { name: "SQL", level: 65 },
-      { name: "Machine Learning", level: 45 },
-      { name: "ETL / Data Engineering", level: 55 },
+      { name: "Power BI / DAX", level: 40, context: "Aufbau, erste eigene Dashboards" },
+      { name: "Python", level: 60, context: "Data-Science-Zertifikat, Pandas, Scikit-learn" },
+      { name: "SQL", level: 65, context: "Abfragen, Joins, Aggregationen, Views" },
+      { name: "Machine Learning", level: 45, context: "Grundlagen, Regression, Klassifikation" },
+      { name: "ETL / Data Engineering", level: 55, context: "Excel-zu-DB Pipelines, Web Scraping" },
     ],
   },
   {
     category: "Business & Soft Skills",
     skills: [
-      { name: "Prozessoptimierung", level: 85 },
-      { name: "Beratung & Stakeholder Mgmt", level: 85 },
-      { name: "Unternehmerisches Denken", level: 90 },
-      { name: "Analytisches Arbeiten", level: 95 },
+      { name: "Prozessoptimierung", level: 85, context: "15 Prozesse dokumentiert & automatisiert" },
+      { name: "Beratung & Stakeholder Mgmt", level: 85, context: "Ministerien, Projektträger, Partner" },
+      { name: "Unternehmerisches Denken", level: 90, context: "2 Gründungen, Immobilien" },
+      { name: "Analytisches Arbeiten", level: 95, context: "Kern jeder bisherigen Position" },
     ],
   },
 ];
@@ -97,38 +97,26 @@ const timeline = [
   { year: "2008–2009", role: "Praktikum & Diplomarbeit Controlling", company: "Continental Automotive" },
 ];
 
-function SkillBar({ name, level, learning, visible }) {
+function SkillBar({ name, level, context, visible }) {
+  const levelLabel = level >= 90 ? "Experte" : level >= 70 ? "Fortgeschritten" : level >= 50 ? "Solide Basis" : "Aufbau";
+  const levelColor = level >= 90 ? "#008c46" : level >= 70 ? "#111" : level >= 50 ? "#666" : "#999";
   return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 2 }}>
         <span style={{ fontSize: 13, fontFamily: "'DM Sans', sans-serif", color: "#333", letterSpacing: "0.02em" }}>
           {name}
-          {learning && (
-            <span style={{
-              marginLeft: 8,
-              fontSize: 10,
-              background: "rgba(0,140,70,0.08)",
-              color: "#008c46",
-              padding: "2px 8px",
-              borderRadius: 3,
-              fontWeight: 600,
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
-            }}>
-              Lernphase
-            </span>
-          )}
         </span>
-        <span style={{ fontSize: 12, color: "#aaa", fontFamily: "monospace" }}>{level}%</span>
+        <span style={{ fontSize: 9, fontFamily: "'Space Mono', monospace", color: levelColor, letterSpacing: "0.05em", textTransform: "uppercase", fontWeight: 600 }}>{levelLabel}</span>
       </div>
+      {context && (
+        <div style={{ fontSize: 10, color: "#aaa", marginBottom: 4, lineHeight: 1.4 }}>{context}</div>
+      )}
       <div style={{ height: 3, background: "#f0f0f0", borderRadius: 2, overflow: "hidden" }}>
         <div
           style={{
             height: "100%",
             width: visible ? `${level}%` : "0%",
-            background: learning
-              ? "linear-gradient(90deg, #008c46, #00b35a)"
-              : `linear-gradient(90deg, #111 ${Math.max(0, level - 30)}%, #999)`,
+            background: `linear-gradient(90deg, #111 ${Math.max(0, level - 30)}%, #999)`,
             borderRadius: 2,
             transition: "width 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
@@ -177,7 +165,7 @@ export default function Portfolio() {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const navLabels = { hero: "Start", profil: "Profil", projekte: "Projekte", skills: "Skills", dashboard: "Dashboard", foerdermittel: "Fördermittel", automatisierung: "Automatisierung", beschaffung: "Beschaffung", sanierung: "Sanierung" };
+  const navLabels = { hero: "Start", profil: "Profil", projekte: "Projekte", skills: "Skills", mehrwert: "Mehrwert", dashboard: "Dashboard", foerdermittel: "Fördermittel", automatisierung: "Automatisierung", beschaffung: "Beschaffung", sanierung: "Sanierung" };
 
   return (
     <div style={{
@@ -570,7 +558,7 @@ export default function Portfolio() {
                   key={skill.name}
                   name={skill.name}
                   level={skill.level}
-                  learning={skill.learning}
+                  context={skill.context}
                   visible={skillsVisible}
                 />
               ))}
@@ -578,23 +566,129 @@ export default function Portfolio() {
           ))}
         </div>
 
+        {/* Methodik-Transparenz */}
         <div style={{
-          marginTop: 64,
-          padding: 32,
+          marginTop: 48,
+          padding: "20px 24px",
           border: "1px solid #eee",
-          background: "rgba(0,140,70,0.02)",
+          background: "#fafafa",
+          fontSize: 12,
+          color: "#888",
+          lineHeight: 1.7,
         }}>
-          <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-            <span style={{ fontSize: 24 }}>🎯</span>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: "#111", marginBottom: 8 }}>
-                Aktuelle Lernziele
-              </div>
-              <p style={{ fontSize: 14, color: "#777", lineHeight: 1.7, margin: 0 }}>
-                Power BI & DAX vertiefen • Python für Finance-Automatisierung auffrischen •
-                KI-Tools für Controlling-Prozesse evaluieren und integrieren
-              </p>
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "#bbb", marginRight: 8 }}>Methodik</span>
+          Ehrliche Selbsteinschätzung: "Experte" = jahrelange Praxiserfahrung mit nachweisbaren Ergebnissen.
+          "Aufbau" = aktiv am Lernen mit ersten eigenen Projekten. Die Balken zeigen, wo ich stehe — nicht wo ich hinmöchte.
+          Transparenz ist mir wichtiger als Selbstvermarktung.
+        </div>
+
+        {/* Aktuelle Lernziele */}
+        <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+          {[
+            { label: "Q2 2026", goal: "Power BI & DAX", detail: "Eigene Dashboards für Portfolio-Projekte. DAX-Measures für Fördermittel-Reporting." },
+            { label: "Q3 2026", goal: "Python Auffrischung", detail: "Finance-Automatisierung, Pandas-Pipelines, API-Anbindungen für Echtzeit-Daten." },
+            { label: "Q4 2026", goal: "KI im Controlling", detail: "Claude/GPT-Integration in Controlling-Workflows. Anomalie-Erkennung, NLP für Berichte." },
+          ].map((item) => (
+            <div key={item.label} style={{ border: "1px solid #eee", padding: "16px 20px" }}>
+              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#008c46", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>{item.label}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#222", marginBottom: 6 }}>{item.goal}</div>
+              <div style={{ fontSize: 11, color: "#999", lineHeight: 1.6 }}>{item.detail}</div>
             </div>
+          ))}
+        </div>
+      </section>
+
+      {/* MEHRWERT */}
+      <section id="mehrwert" style={{ padding: "120px 32px", maxWidth: 1000, margin: "0 auto" }}>
+        <div style={{
+          fontFamily: "'Space Mono', monospace",
+          fontSize: 11,
+          letterSpacing: "0.3em",
+          textTransform: "uppercase",
+          color: "#008c46",
+          marginBottom: 12,
+        }}>
+          04 — Mehrwert
+        </div>
+        <h2 style={{ fontSize: 32, fontWeight: 300, color: "#111", marginBottom: 16, lineHeight: 1.3 }}>
+          Was ich Ihrem <span style={{ fontWeight: 700 }}>Unternehmen bringe</span>
+        </h2>
+        <p style={{ fontSize: 14, color: "#999", marginBottom: 48, maxWidth: 650 }}>
+          Die Brücke zwischen Controlling-Expertise und moderner Technologie — konkret, messbar und sofort einsetzbar.
+        </p>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 40 }}>
+          {[
+            {
+              title: "KI-Readiness Assessment",
+              desc: "Analyse Ihrer Controlling-Prozesse auf Automatisierungspotenzial. Welche Routineaufgaben kann KI übernehmen? Wo bringt Datenanalyse den größten ROI? Ergebnis: konkreter Fahrplan mit Quick Wins und langfristiger Strategie.",
+              tags: ["Prozessanalyse", "ROI-Bewertung", "Fahrplan"],
+              accent: "#008c46",
+            },
+            {
+              title: "Controlling 4.0 Transformation",
+              desc: "Von Excel-Listen zu datengetriebenen Dashboards. Ich kenne beide Welten — die Sprache der Controller und die Möglichkeiten moderner Tools. Keine Disruption, sondern schrittweise Evolution mit messbaren Zwischenergebnissen.",
+              tags: ["Power BI", "Automatisierung", "Change Management"],
+              accent: "#0066cc",
+            },
+            {
+              title: "Fördermittel-Compliance",
+              desc: "BMBF, BMWK, KfW — ich kenne die Regelwerke (NKBF 2017, ANBest-P, BEG). Aufbau digitaler Prüfprozesse, die Rückforderungsrisiken minimieren und den Verwaltungsaufwand um bis zu 90% senken.",
+              tags: ["NKBF 2017", "ANBest-P", "profi-Online"],
+              accent: "#cc7700",
+            },
+            {
+              title: "KI-Einführung im Controlling",
+              desc: "Pragmatischer Einstieg: Claude/GPT für Berichtsanalyse, Anomalie-Erkennung in Buchungsdaten, automatische Abweichungskommentare. Kein Hype, sondern getestete Use Cases mit konkretem Zeitgewinn.",
+              tags: ["Claude API", "NLP", "Anomalie-Erkennung"],
+              accent: "#6B46C1",
+            },
+          ].map((item) => (
+            <div key={item.title} style={{
+              border: "1px solid #eee",
+              borderTop: `3px solid ${item.accent}`,
+              padding: "24px 28px",
+              background: "#fff",
+            }}>
+              <div style={{ fontSize: 17, fontWeight: 600, color: "#111", marginBottom: 10 }}>{item.title}</div>
+              <p style={{ fontSize: 13, color: "#666", lineHeight: 1.7, marginBottom: 14 }}>{item.desc}</p>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {item.tags.map((tag) => (
+                  <span key={tag} style={{
+                    fontSize: 10,
+                    fontFamily: "'Space Mono', monospace",
+                    color: "#999",
+                    border: "1px solid #e8e8e8",
+                    padding: "2px 8px",
+                    letterSpacing: "0.02em",
+                  }}>{tag}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Was Entscheider interessiert */}
+        <div style={{
+          border: "1px solid #eee",
+          padding: "24px 28px",
+          background: "#fafafa",
+        }}>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: "0.15em", textTransform: "uppercase", color: "#008c46", marginBottom: 16 }}>
+            Auf den Punkt
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24 }}>
+            {[
+              { metric: "93%", label: "Effizienzgewinn", detail: "bei Fördermittel-Prozessen durch Automatisierung" },
+              { metric: "47 Tage", label: "Zeitersparnis / Jahr", detail: "pro Förderprojekt durch digitale Workflows" },
+              { metric: "15+ Jahre", label: "Controlling-Erfahrung", detail: "Krones AG, VDI/VDE-IT, Immobilien, Startups" },
+            ].map((kpi) => (
+              <div key={kpi.label} style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 28, fontWeight: 700, color: "#111", fontFamily: "'Space Mono', monospace" }}>{kpi.metric}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#333", marginTop: 4 }}>{kpi.label}</div>
+                <div style={{ fontSize: 10, color: "#999", marginTop: 4 }}>{kpi.detail}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -621,7 +715,7 @@ export default function Portfolio() {
           color: "#008c46",
           marginBottom: 12,
         }}>
-          08 — Energetische Sanierung
+          09 — Energetische Sanierung
         </div>
         <SanierungsRechner />
       </section>
@@ -638,7 +732,7 @@ export default function Portfolio() {
           color: "#ccc",
           letterSpacing: "0.05em",
         }}>
-          © 2025 Christoph Zapp — Berlin
+          © 2026 Christoph Zapp — Berlin
         </div>
       </footer>
 

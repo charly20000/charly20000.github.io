@@ -585,7 +585,7 @@ export default function FoerdermittelPipeline() {
       style={{ padding: "120px 32px", maxWidth: 1000, margin: "0 auto" }}
     >
       <div style={{ ...monoLabel, letterSpacing: "0.3em", color: "#008c46", marginBottom: 12 }}>
-        05 — Fördermittel-Controlling
+        06 — Fördermittel-Controlling
       </div>
       <h2 style={{ fontSize: 32, fontWeight: 300, color: "#111", marginBottom: 16, lineHeight: 1.3 }}>
         Daten-<span style={{ fontWeight: 700 }}>Pipeline</span>

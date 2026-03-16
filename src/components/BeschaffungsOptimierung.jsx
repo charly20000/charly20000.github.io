@@ -197,7 +197,7 @@ export default function BeschaffungsOptimierung() {
       style={{ padding: "120px 32px", maxWidth: 1000, margin: "0 auto" }}
     >
       <div style={{ ...monoLabel, letterSpacing: "0.3em", color: "#008c46", marginBottom: 12 }}>
-        07 — Beschaffungsoptimierung
+        08 — Beschaffungsoptimierung
       </div>
       <h2 style={{ fontSize: 32, fontWeight: 300, color: "#111", marginBottom: 16, lineHeight: 1.3 }}>
         Rohstoff-Einkauf mit <span style={{ fontWeight: 700 }}>KI-gestützter Prognose</span>

@@ -279,7 +279,7 @@ export default function Dashboard() {
       style={{ padding: "120px 32px", maxWidth: 1000, margin: "0 auto" }}
     >
       <div style={{ ...monoLabel, letterSpacing: "0.3em", color: "#008c46", marginBottom: 12 }}>
-        04 — Arbeitsmarkt-Dashboard
+        05 — Arbeitsmarkt-Dashboard
       </div>
       <h2 style={{ fontSize: 32, fontWeight: 300, color: "#111", marginBottom: 16, lineHeight: 1.3 }}>
         Berliner <span style={{ fontWeight: 700 }}>Controller-Markt</span>
@@ -441,7 +441,7 @@ export default function Dashboard() {
                 {filteredJobs.length} Ergebnisse
               </div>
 
-              <div style={{ display: "grid", gap: 8 }}>
+              <div style={{ display: "grid", gap: 8, maxHeight: 600, overflowY: "auto" }}>
                 {filteredJobs.slice(0, 50).map((job) => (
                   <div
                     key={job.id}
@@ -595,7 +595,7 @@ export default function Dashboard() {
                 {filteredVerwandt.length} Ergebnisse
               </div>
 
-              <div style={{ display: "grid", gap: 8 }}>
+              <div style={{ display: "grid", gap: 8, maxHeight: 600, overflowY: "auto" }}>
                 {filteredVerwandt.slice(0, 50).map((job) => (
                   <div
                     key={job.id}

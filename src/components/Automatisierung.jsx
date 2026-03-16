@@ -184,7 +184,7 @@ export default function Automatisierung() {
       style={{ padding: "120px 32px", maxWidth: 1000, margin: "0 auto" }}
     >
       <div style={{ ...monoLabel, letterSpacing: "0.3em", color: "#008c46", marginBottom: 12 }}>
-        06 — Prozessautomatisierung
+        07 — Prozessautomatisierung
       </div>
       <h2 style={{ fontSize: 32, fontWeight: 300, color: "#111", marginBottom: 16, lineHeight: 1.3 }}>
         Manuell vs. <span style={{ fontWeight: 700 }}>Automatisiert</span>
