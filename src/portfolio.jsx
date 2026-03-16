@@ -2,14 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import Dashboard from "./components/Dashboard";
 import FoerdermittelPipeline from "./components/FoerdermittelPipeline";
 import Automatisierung from "./components/Automatisierung";
-import Lernpfad from "./components/Lernpfad";
-import Kostenstellenanalyse from "./components/Kostenstellenanalyse";
-import SollIstSimulator from "./components/SollIstSimulator";
-import ESGDashboard from "./components/ESGDashboard";
-import ControllerGPT from "./components/ControllerGPT";
 import BeschaffungsOptimierung from "./components/BeschaffungsOptimierung";
+import SanierungsRechner from "./components/SanierungsRechner";
 
-const SECTIONS = ["hero", "profil", "projekte", "skills", "dashboard", "foerdermittel", "automatisierung", "lernpfad", "kostenstellenanalyse", "sollist", "esg", "controllergpt", "beschaffung"];
+const SECTIONS = ["hero", "profil", "projekte", "skills", "dashboard", "foerdermittel", "automatisierung", "beschaffung", "sanierung"];
 
 const projects = [
   {
@@ -40,42 +36,6 @@ const projects = [
     link: "automatisierung",
   },
   {
-    title: "KI-Kostenstellenanalyse",
-    status: "Live",
-    tags: ["KI", "Anomalie-Erkennung", "Kostenrechnung", "Claude"],
-    description:
-      "KI-gestützte Analyse von Kostenstellen-Buchungen. Automatische Anomalie-Erkennung, Outlier-Identifikation und natürlichsprachliche Erklärungen für Abweichungen.",
-    icon: "🔍",
-    link: "kostenstellenanalyse",
-  },
-  {
-    title: "Soll/Ist-Simulator mit Szenario-Planung",
-    status: "Live",
-    tags: ["Simulation", "Deckungsbeitrag", "Break-Even", "Planung"],
-    description:
-      "Interaktiver Simulator mit Echtzeit-Berechnung von Deckungsbeitrag, Break-Even und Liquidität. Szenario-Vergleiche per Slider für alle Kostenkategorien.",
-    icon: "📈",
-    link: "sollist",
-  },
-  {
-    title: "ESG/Nachhaltigkeits-Reporting",
-    status: "Live",
-    tags: ["ESG", "CSRD", "CO₂-Bilanz", "Scope 1/2/3"],
-    description:
-      "CSRD-konformes Nachhaltigkeits-Dashboard mit CO₂-Bilanz (Scope 1/2/3), ESRS-Standards und Reduktionspfad bis Klimaneutralität 2045.",
-    icon: "🌱",
-    link: "esg",
-  },
-  {
-    title: "Controller-GPT: Sprache → SQL/DAX",
-    status: "Live",
-    tags: ["NLP", "SQL", "DAX", "Claude API"],
-    description:
-      "Natürliche Sprache in SQL-Queries und DAX-Measures übersetzen. Live-Demo der Brücke zwischen Business-Fragen und technischen Abfragesprachen.",
-    icon: "🤖",
-    link: "controllergpt",
-  },
-  {
     title: "Beschaffungsoptimierung Rohstoffe",
     status: "Live",
     tags: ["Rohstoffpreise", "Monte Carlo", "Risikomanagement", "Lageroptimierung"],
@@ -83,6 +43,15 @@ const projects = [
       "Rohstoff-Einkaufsoptimierung mit LME-Preismodellierung, geopolitischer Risikoanalyse und adjustierbarem Risikoprofil. Berechnet optimale Kaufzeitpunkte und Mengen unter Berücksichtigung von Lagerkapazität und Saisonalität.",
     icon: "🏭",
     link: "beschaffung",
+  },
+  {
+    title: "Energetische Sanierung — Projektkalkulator",
+    status: "Live",
+    tags: ["KfW-Förderung", "BEG", "Energieeffizienz", "Projektkalkulation"],
+    description:
+      "Interaktiver Kalkulator für energetische Gebäudesanierung. Berechnet Kosten, KfW-Förderung (Programm 261), Energieeinsparung und CO₂-Reduktion mit Gantt-Projektplanung.",
+    icon: "🏗️",
+    link: "sanierung",
   },
 ];
 
@@ -208,7 +177,7 @@ export default function Portfolio() {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const navLabels = { hero: "Start", profil: "Profil", projekte: "Projekte", skills: "Skills", dashboard: "Dashboard", foerdermittel: "Fördermittel", automatisierung: "Automatisierung", lernpfad: "Lernpfad", kostenstellenanalyse: "Kostenstellen", sollist: "Soll/Ist", esg: "ESG", controllergpt: "GPT", beschaffung: "Beschaffung" };
+  const navLabels = { hero: "Start", profil: "Profil", projekte: "Projekte", skills: "Skills", dashboard: "Dashboard", foerdermittel: "Fördermittel", automatisierung: "Automatisierung", beschaffung: "Beschaffung", sanierung: "Sanierung" };
 
   return (
     <div style={{
@@ -639,23 +608,23 @@ export default function Portfolio() {
       {/* PROZESSAUTOMATISIERUNG */}
       <Automatisierung />
 
-      {/* LERNPFAD */}
-      <Lernpfad />
-
-      {/* KI-KOSTENSTELLENANALYSE */}
-      <Kostenstellenanalyse />
-
-      {/* SOLL/IST-SIMULATOR */}
-      <SollIstSimulator />
-
-      {/* ESG-DASHBOARD */}
-      <ESGDashboard />
-
-      {/* CONTROLLER-GPT */}
-      <ControllerGPT />
-
       {/* BESCHAFFUNGSOPTIMIERUNG */}
       <BeschaffungsOptimierung />
+
+      {/* SANIERUNGSRECHNER */}
+      <section id="sanierung" style={{ padding: "120px 32px", maxWidth: 1000, margin: "0 auto" }}>
+        <div style={{
+          fontFamily: "'Space Mono', monospace",
+          fontSize: 11,
+          letterSpacing: "0.3em",
+          textTransform: "uppercase",
+          color: "#008c46",
+          marginBottom: 12,
+        }}>
+          08 — Energetische Sanierung
+        </div>
+        <SanierungsRechner />
+      </section>
 
       {/* FOOTER */}
       <footer style={{
