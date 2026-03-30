@@ -726,6 +726,14 @@ export default function Portfolio() {
         borderTop: "1px solid #f0f0f0",
         textAlign: "center",
       }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 24, marginBottom: 16 }}>
+          <a href="#impressum" style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#999", textDecoration: "none", letterSpacing: "0.05em" }}>
+            Impressum
+          </a>
+          <a href="#datenschutz" style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#999", textDecoration: "none", letterSpacing: "0.05em" }}>
+            Datenschutz
+          </a>
+        </div>
         <div style={{
           fontFamily: "'Space Mono', monospace",
           fontSize: 12,
