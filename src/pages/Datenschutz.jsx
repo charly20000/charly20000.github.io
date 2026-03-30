@@ -162,36 +162,7 @@ export default function Datenschutz() {
           </p>
         </Section>
 
-        <Section title="8. Datenbank — Supabase">
-          <p>
-            Für bestimmte Funktionen dieser Website (z.{"\u00A0"}B. das Arbeitsmarkt-Dashboard) wird
-            Supabase als Backend-Dienst eingesetzt. Anbieter ist die Supabase, Inc., 970 Toa Payoh
-            North #07-04, Singapore 318992.
-          </p>
-          <p>
-            Bei Nutzung datenbankgestützter Funktionen werden Anfragen vom Browser an
-            Supabase-Server übermittelt. Dabei können IP-Adresse, Abfragezeitpunkt und technische
-            Verbindungsdaten verarbeitet werden.
-          </p>
-          <p>
-            Supabase bietet die Möglichkeit, Daten in EU-Rechenzentren (z.{"\u00A0"}B. Frankfurt) zu
-            hosten. Für Datenübermittlungen in Drittstaaten stützt sich Supabase auf
-            Standardvertragsklauseln der EU-Kommission gemäß Art. 46 Abs. 2 lit. c DSGVO. Weitere
-            Informationen:{" "}
-            <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer" style={linkStyle}>
-              Supabase Privacy Policy
-            </a>,{" "}
-            <a href="https://supabase.com/legal/dpa" target="_blank" rel="noopener noreferrer" style={linkStyle}>
-              Supabase DPA
-            </a>.
-          </p>
-          <p>
-            Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der
-            Bereitstellung datenbankgestützter Funktionen).
-          </p>
-        </Section>
-
-        <Section title="9. Cookies">
+        <Section title="8. Cookies">
           <p>
             Diese Website verwendet derzeit keine Cookies und setzt keine Tracking-Technologien
             ein, die eine Einwilligung nach § 25 TDDDG erfordern. Sollte sich dies in Zukunft
@@ -199,7 +170,7 @@ export default function Datenschutz() {
           </p>
         </Section>
 
-        <Section title="10. Ihre Rechte">
+        <Section title="9. Ihre Rechte">
           <p>Ihnen stehen folgende Rechte gemäß DSGVO zu:</p>
           <p>
             <strong>Auskunftsrecht (Art. 15 DSGVO):</strong> Sie haben das Recht, Auskunft über
@@ -241,7 +212,7 @@ export default function Datenschutz() {
           </p>
         </Section>
 
-        <Section title="11. Änderungen dieser Datenschutzerklärung">
+        <Section title="10. Änderungen dieser Datenschutzerklärung">
           <p>
             Diese Datenschutzerklärung wird bei Bedarf aktualisiert, um sie an geänderte Rechtslage
             oder Änderungen der Datenverarbeitung anzupassen. Die jeweils aktuelle Fassung ist stets
