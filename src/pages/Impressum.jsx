@@ -6,7 +6,6 @@ export default function Impressum() {
       color: "#222",
       minHeight: "100vh",
     }}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 
       {/* NAV */}
       <nav style={{
@@ -65,7 +64,8 @@ export default function Impressum() {
 
         <Section title="Kontakt">
           <p>
-            E-Mail: chs.zapp@posteo.de
+            E-Mail: chs.zapp@posteo.de<br />
+            Kontaktformular: <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; setTimeout(() => { document.getElementById('kontakt')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }} style={linkStyle}>zum Kontaktformular</a>
           </p>
         </Section>
 

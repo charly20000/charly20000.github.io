@@ -5,7 +5,7 @@ import Automatisierung from "./components/Automatisierung";
 import BeschaffungsOptimierung from "./components/BeschaffungsOptimierung";
 import SanierungsRechner from "./components/SanierungsRechner";
 
-const SECTIONS = ["hero", "profil", "projekte", "skills", "mehrwert", "dashboard", "foerdermittel", "automatisierung", "beschaffung", "sanierung"];
+const SECTIONS = ["hero", "profil", "projekte", "skills", "mehrwert", "dashboard", "foerdermittel", "automatisierung", "beschaffung", "sanierung", "kontakt"];
 
 const projects = [
   {
@@ -165,7 +165,7 @@ export default function Portfolio() {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const navLabels = { hero: "Start", profil: "Profil", projekte: "Projekte", skills: "Skills", mehrwert: "Mehrwert", dashboard: "Dashboard", foerdermittel: "Fördermittel", automatisierung: "Automatisierung", beschaffung: "Beschaffung", sanierung: "Sanierung" };
+  const navLabels = { hero: "Start", profil: "Profil", projekte: "Projekte", skills: "Skills", mehrwert: "Mehrwert", dashboard: "Dashboard", foerdermittel: "Fördermittel", automatisierung: "Automatisierung", beschaffung: "Beschaffung", sanierung: "Sanierung", kontakt: "Kontakt" };
 
   return (
     <div style={{
@@ -175,7 +175,7 @@ export default function Portfolio() {
       minHeight: "100vh",
       overflowX: "hidden",
     }}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+      {/* Fonts loaded via /fonts/fonts.css in index.html */}
 
       {/* NAV */}
       <nav style={{
@@ -718,6 +718,78 @@ export default function Portfolio() {
           09 — Energetische Sanierung
         </div>
         <SanierungsRechner />
+      </section>
+
+      {/* KONTAKT */}
+      <section id="kontakt" style={{ padding: "120px 32px", maxWidth: 1000, margin: "0 auto" }}>
+        <div style={{
+          fontFamily: "'Space Mono', monospace",
+          fontSize: 11,
+          letterSpacing: "0.3em",
+          textTransform: "uppercase",
+          color: "#008c46",
+          marginBottom: 12,
+        }}>
+          10 — Kontakt
+        </div>
+        <h2 style={{ fontSize: 32, fontWeight: 300, color: "#111", marginBottom: 16, lineHeight: 1.3 }}>
+          Sprechen Sie mich <span style={{ fontWeight: 700 }}>an</span>
+        </h2>
+        <p style={{ fontSize: 14, color: "#999", marginBottom: 48, maxWidth: 650 }}>
+          Interesse an einer Zusammenarbeit oder Fragen zu meinem Profil? Schreiben Sie mir — ich melde mich zeitnah zurück.
+        </p>
+
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          const form = e.target;
+          const name = form.elements.name.value;
+          const email = form.elements.email.value;
+          const message = form.elements.message.value;
+          const subject = encodeURIComponent(`Kontaktanfrage von ${name}`);
+          const body = encodeURIComponent(`Name: ${name}\nE-Mail: ${email}\n\n${message}`);
+          window.location.href = `mailto:chs.zapp@posteo.de?subject=${subject}&body=${body}`;
+        }} style={{ maxWidth: 600 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+            <div>
+              <label style={{ display: "block", fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#999", marginBottom: 6 }}>Name</label>
+              <input name="name" required style={{
+                width: "100%", padding: "12px 16px", border: "1px solid #e8e8e8", fontSize: 14,
+                fontFamily: "'DM Sans', sans-serif", color: "#222", background: "#fafafa",
+                outline: "none", transition: "border-color 0.3s",
+              }} onFocus={(e) => e.target.style.borderColor = "#008c46"}
+                 onBlur={(e) => e.target.style.borderColor = "#e8e8e8"} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#999", marginBottom: 6 }}>E-Mail</label>
+              <input name="email" type="email" required style={{
+                width: "100%", padding: "12px 16px", border: "1px solid #e8e8e8", fontSize: 14,
+                fontFamily: "'DM Sans', sans-serif", color: "#222", background: "#fafafa",
+                outline: "none", transition: "border-color 0.3s",
+              }} onFocus={(e) => e.target.style.borderColor = "#008c46"}
+                 onBlur={(e) => e.target.style.borderColor = "#e8e8e8"} />
+            </div>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#999", marginBottom: 6 }}>Nachricht</label>
+            <textarea name="message" required rows={5} style={{
+              width: "100%", padding: "12px 16px", border: "1px solid #e8e8e8", fontSize: 14,
+              fontFamily: "'DM Sans', sans-serif", color: "#222", background: "#fafafa",
+              outline: "none", resize: "vertical", transition: "border-color 0.3s",
+            }} onFocus={(e) => e.target.style.borderColor = "#008c46"}
+               onBlur={(e) => e.target.style.borderColor = "#e8e8e8"} />
+          </div>
+          <button type="submit" style={{
+            background: "#111", color: "#fff", border: "none", padding: "14px 32px",
+            fontFamily: "'Space Mono', monospace", fontSize: 12, letterSpacing: "0.08em",
+            textTransform: "uppercase", cursor: "pointer", transition: "background 0.3s",
+          }} onMouseEnter={(e) => e.target.style.background = "#008c46"}
+             onMouseLeave={(e) => e.target.style.background = "#111"}>
+            Nachricht senden
+          </button>
+          <p style={{ fontSize: 11, color: "#bbb", marginTop: 12 }}>
+            Öffnet Ihr E-Mail-Programm. Alternativ: <a href="mailto:chs.zapp@posteo.de" style={{ color: "#008c46", textDecoration: "none" }}>chs.zapp@posteo.de</a>
+          </p>
+        </form>
       </section>
 
       {/* FOOTER */}

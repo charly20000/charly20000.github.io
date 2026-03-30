@@ -6,7 +6,6 @@ export default function Datenschutz() {
       color: "#222",
       minHeight: "100vh",
     }}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 
       {/* NAV */}
       <nav style={{
@@ -154,23 +153,12 @@ export default function Datenschutz() {
           </p>
         </Section>
 
-        <Section title="7. Schriftarten — Google Fonts">
+        <Section title="7. Schriftarten">
           <p>
-            Diese Website nutzt Schriftarten („Google Fonts") des Anbieters Google Ireland Limited,
-            Gordon House, Barrow Street, Dublin 4, Irland. Beim Aufruf der Seite lädt Ihr Browser
-            die benötigten Schriftarten direkt von Google-Servern. Dabei wird Ihre IP-Adresse an
-            Google übermittelt.
-          </p>
-          <p>
-            Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einer
-            einheitlichen und ansprechenden Darstellung der Website). Google ist unter dem EU-U.S.
-            Data Privacy Framework zertifiziert. Weitere Informationen:{" "}
-            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" style={linkStyle}>
-              Google Datenschutzerklärung
-            </a>,{" "}
-            <a href="https://developers.google.com/fonts/faq/privacy" target="_blank" rel="noopener noreferrer" style={linkStyle}>
-              Google Fonts FAQ
-            </a>.
+            Diese Website nutzt lokal gehostete Schriftarten (DM Sans, Space Mono, DM Mono).
+            Die Schriftdateien werden direkt von diesem Server ausgeliefert. Es findet keine
+            Verbindung zu externen Servern (wie z.{"\u00A0"}B. Google) statt, und es werden keine
+            Daten an Dritte übermittelt.
           </p>
         </Section>
 

@@ -188,7 +188,6 @@ export default function SanierungsRechner() {
       maxWidth: 960, margin: "0 auto", padding: "24px 16px",
       color: "#2c3e50", minHeight: "100vh",
     }}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
