@@ -5,13 +5,15 @@ import Automatisierung from "./components/Automatisierung";
 const SECTIONS = ["hero", "profil", "kompetenz", "projekte", "kontakt"];
 
 const timeline = [
+  { year: "seit 2025", role: "KI-gestütztes Arbeiten — Selbststudium", company: "Berlin", desc: "Praxisorientierte Weiterbildung mit Claude und Claude Code. Datenanalyse, Automatisierung, Webentwicklung. Diese Website ist das Ergebnis.", highlight: true },
   { year: "2023–2025", role: "Projektcontroller Fördermittelmanagement", company: "VDI/VDE Innovation + Technik GmbH, Berlin", desc: "10–20 BMBF/BMWK-Förderprojekte parallel gesteuert. Beratung, Prüfung und finanzielle Begleitung im Auftrag von Ministerien.", highlight: true },
-  { year: "2021–2023", role: "Selbstständig – Immobilienprojekte", company: "Berlin", desc: "Marktanalysen, Finanzierung und Projektsteuerung." },
-  { year: "2021", role: "Data Science Weiterbildung", company: "Alfa Training, Berlin", desc: "Python, Statistik, Machine Learning, Big Data Analytics." },
-  { year: "2019–2020", role: "Unternehmensentwicklung", company: "SwitchUp GmbH, Berlin", desc: "Geschäftsprozesse aufgebaut, Trend- und Entwicklungsanalysen." },
-  { year: "2017–2019", role: "Gründer – Digitale Künstlerplattform (YAA)", company: "Berlin", desc: "Business Plan, Finanzierung, Netzwerkarbeit mit Kulturschaffenden." },
-  { year: "2010–2016", role: "Projekt- & Produktcontroller", company: "Krones AG, Neutraubling", desc: "6 Jahre Controlling im Life Cycle Service. Analysen, Reports und Datenmodelle für den gesamten Servicebereich eines Weltmarktführers.", highlight: true },
-  { year: "2008–2009", role: "Controlling-Praktikum & Diplomarbeit", company: "Continental Automotive, Regensburg", desc: "R&D-Controlling, globales Reporting-System aufgebaut." },
+  { year: "2021–2023", role: "DIY Immobilienprojekte", company: "Berlin", desc: "Eigenständige Suche, Planung und Umsetzung von Immobilienprojekten. Marktanalysen und Projektsteuerung." },
+  { year: "2021", role: "Data Science Weiterbildung", company: "Alfa Training, Berlin", desc: "Python (98 Pkt.), Statistik (100 Pkt.), Machine Learning (92 Pkt.), Big Data Analytics (98 Pkt.)." },
+  { year: "2019–2020", role: "Unternehmensentwicklung", company: "SwitchUp GmbH, Berlin", desc: "Aufbau und Optimierung von Geschäftsprozessen, Trend- und Entwicklungsanalysen." },
+  { year: "2017–2019", role: "Gründer – Digitale Künstlerplattform (YAA)", company: "Berlin", desc: "Business Plan, Finanzierung, Website-Entwicklung, Netzwerkarbeit mit Kulturschaffenden und Investoren." },
+  { year: "2017", role: "Controlling in der Geschäftsführung", company: "Weihe GmbH, Berlin", desc: "Aufbau automatisierter Reporting-Tools, Pricing-Tool, Deckungsbeitrags- und Prozesskostenrechnungen." },
+  { year: "2010–2016", role: "Projekt- & Produktcontroller (Service)", company: "Krones AG, Neutraubling", desc: "6 Jahre Controlling im Life Cycle Service eines Weltmarktführers im Maschinenbau. Analysen, Reports und Datenmodelle für den gesamten Servicebereich.", highlight: true },
+  { year: "2008–2009", role: "Praktikum & Diplomarbeit Controlling", company: "Continental Automotive, Regensburg", desc: "R&D-Controlling, Entwicklung und Automatisierung eines weltweiten Reporting-Systems über 23 Standorte (SAP, ETL, BW, OLAP)." },
 ];
 
 export default function Portfolio() {
@@ -70,7 +72,7 @@ export default function Portfolio() {
         <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px)", backgroundSize: "60px 60px", transform: `translateY(${scrollY * 0.1}px)` }} />
         <div style={{ textAlign: "center", zIndex: 1, padding: "0 24px", maxWidth: 800 }}>
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: "0.3em", textTransform: "uppercase", color: "#008c46", marginBottom: 24, opacity: 0, animation: "fadeInUp 0.8s 0.2s forwards" }}>
-            Betriebswirt · Controller · Fördermittelmanager
+            Betriebswirt · Controller · Fördermittelmanager · Gründer
           </div>
           <h1 style={{ fontSize: "clamp(36px, 7vw, 72px)", fontWeight: 300, lineHeight: 1.1, margin: "0 0 20px", color: "#111", opacity: 0, animation: "fadeInUp 0.8s 0.4s forwards" }}>
             Christoph<br /><span style={{ fontWeight: 700 }}>Zapp</span>
@@ -96,7 +98,7 @@ export default function Portfolio() {
       {/* PROFIL */}
       <section id="profil" style={{ padding: "120px 32px", maxWidth: 1000, margin: "0 auto" }}>
         <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: "0.3em", textTransform: "uppercase", color: "#008c46", marginBottom: 12 }}>01 — Profil</div>
-        <h2 style={{ fontSize: 32, fontWeight: 300, color: "#111", marginBottom: 48, lineHeight: 1.3 }}>Generalist mit <span style={{ fontWeight: 700 }}>Tiefgang</span></h2>
+        <h2 style={{ fontSize: 32, fontWeight: 300, color: "#111", marginBottom: 48, lineHeight: 1.3 }}>Generalist. <span style={{ fontWeight: 700 }}>Hands-on.</span></h2>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, marginBottom: 64 }}>
           <div>
@@ -109,10 +111,10 @@ export default function Portfolio() {
           </div>
           <div>
             <p style={{ fontSize: 15, lineHeight: 1.8, color: "#666", marginBottom: 20 }}>
-              Was mich von anderen Bewerbern unterscheidet: Ich habe nicht nur Data Science gelernt, ich wende es an. Diese Website, die Demos darunter, die automatisierten Analysen — das ist keine Agenturarbeit. Das ist mein Werkzeug.
+              Seit Ende 2025 arbeite ich intensiv mit <strong style={{ color: "#222" }}>KI-Werkzeugen</strong> — nicht als Trend, sondern als Methode. Mit Claude und Claude Code entwickle ich Lösungen, die Controlling-Fachwissen mit Automatisierung verbinden. Diese Website und die interaktiven Demos darunter sind vollständig so entstanden.
             </p>
             <p style={{ fontSize: 15, lineHeight: 1.8, color: "#666" }}>
-              Durch zwei eigene Gründungen und selbstständige Immobilienprojekte denke ich unternehmerisch. Ich warte nicht auf Vorgaben — ich sehe, wo etwas besser laufen kann, und baue eine Lösung.
+              Durch eine eigene Gründung und selbstständige Immobilienprojekte denke ich unternehmerisch. Ich warte nicht auf Vorgaben — ich sehe, wo bestehende Prozesse mit neuen Werkzeugen besser laufen können, und baue eine Lösung.
             </p>
           </div>
         </div>
@@ -123,7 +125,7 @@ export default function Portfolio() {
             { value: "15+", label: "Jahre Berufserfahrung", sub: "Controlling, Fördermittel, Unternehmensentwicklung" },
             { value: "10–20", label: "Förderprojekte parallel", sub: "VDI/VDE-IT, BMBF/BMWK" },
             { value: "6", label: "Jahre Maschinenbau", sub: "Krones AG, Life Cycle Service" },
-            { value: "2", label: "Eigene Gründungen", sub: "Immobilien & Kulturplattform" },
+            { value: "KI", label: "als Arbeitswerkzeug", sub: "Claude, Python, Automatisierung seit 2025" },
           ].map((kpi) => (
             <div key={kpi.label} style={{ borderLeft: "2px solid #008c46", paddingLeft: 16 }}>
               <div style={{ fontSize: 28, fontWeight: 700, color: "#111", fontFamily: "'Space Mono', monospace", lineHeight: 1 }}>{kpi.value}</div>
@@ -172,7 +174,7 @@ export default function Portfolio() {
           {[
             { title: "Finanzen & Steuerung", accent: "#008c46", items: ["Projektcontrolling (Industrie & öffentlicher Sektor)", "Fördermittelmanagement (NKBF 2017, ANBest-P, BHO)", "Budgetierung, Forecasting, Abweichungsanalysen", "Verwendungsnachweise & Mittelabrufe (profi-Online)", "Deckungsbeitrags- und Ergebnisrechnung"] },
             { title: "Daten & Technologie", accent: "#0066cc", items: ["Python (Pandas, Automatisierung, Web Scraping)", "SQL (Abfragen, Aggregationen, Views)", "KI-Tools im Arbeitsalltag (Claude, GPT)", "Reporting-Automatisierung & BI-Konzepte", "Data Science Grundlagen (ML, Statistik)"] },
-            { title: "Organisation & Denken", accent: "#cc7700", items: ["Prozesse analysieren und neu denken", "Stakeholder-Management (Ministerien, Partner)", "Unternehmerisches Handeln (2 Gründungen)", "Komplexes einfach erklären und visualisieren", "Eigeninitiative — diese Seite ist der Beweis"] },
+            { title: "Organisation & Denken", accent: "#cc7700", items: ["Prozesse analysieren und neu denken", "Stakeholder-Management (Ministerien, Partner)", "Unternehmerisches Handeln (Gründung & Selbstständigkeit)", "Komplexes einfach erklären und visualisieren", "Eigeninitiative — diese Seite ist der Beweis"] },
           ].map((cat) => (
             <div key={cat.title} style={{ borderTop: `3px solid ${cat.accent}`, padding: "24px 0" }}>
               <h3 style={{ fontSize: 16, fontWeight: 600, color: "#111", marginBottom: 16 }}>{cat.title}</h3>
