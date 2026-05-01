@@ -5,15 +5,15 @@ import Automatisierung from "./components/Automatisierung";
 const SECTIONS = ["hero", "profil", "kompetenz", "projekte", "kontakt"];
 
 const timeline = [
-  { year: "seit 2025", role: "Weiterbildung Automatisierung & Digitalisierung", company: "Berlin", desc: "Selbststudium im KI-gestützten Arbeiten: Datenanalyse, Prozessautomatisierung, Webentwicklung. Diese Website ist das Ergebnis.", highlight: true },
-  { year: "2023–2025", role: "Projektcontroller Fördermittelmanagement", company: "VDI/VDE Innovation + Technik GmbH, Berlin", desc: "10–20 BMBF/BMWK-Förderprojekte parallel gesteuert. Beratung, Prüfung und finanzielle Begleitung im Auftrag von Ministerien.", highlight: true },
-  { year: "2021–2023", role: "DIY Immobilienprojekte", company: "Berlin", desc: "Eigenständige Suche, Planung und Umsetzung von Immobilienprojekten. Marktanalysen und Projektsteuerung." },
-  { year: "2021", role: "Data Science Weiterbildung", company: "Alfa Training, Berlin", desc: "Python (98 Pkt.), Statistik (100 Pkt.), Machine Learning (92 Pkt.), Big Data Analytics (98 Pkt.)." },
-  { year: "2019–2020", role: "Datenanalyse & Prozessoptimierung", company: "SwitchUp GmbH, Berlin", desc: "Auswertung operativer Kennzahlen, Trendanalysen für die Geschäftsführung, Digitalisierung interner Prozesse." },
-  { year: "2017–2019", role: "Gründer – Digitale Künstlerplattform (YAA)", company: "Berlin", desc: "Business Plan, Finanzierung, Website-Entwicklung, Netzwerkarbeit mit Kulturschaffenden und Investoren." },
-  { year: "2017", role: "Controlling in der Geschäftsführung", company: "Weihe GmbH, Berlin", desc: "Aufbau automatisierter Reporting-Tools, Pricing-Tool, Deckungsbeitrags- und Prozesskostenrechnungen." },
-  { year: "2010–2016", role: "Projekt- & Produktcontroller (Service)", company: "Krones AG, Neutraubling", desc: "6 Jahre Controlling im Life Cycle Service eines Weltmarktführers im Maschinenbau. Analysen, Reports und Datenmodelle für den gesamten Servicebereich.", highlight: true },
-  { year: "2008–2009", role: "Praktikum & Diplomarbeit Controlling", company: "Continental Automotive, Regensburg", desc: "R&D-Controlling, Entwicklung und Automatisierung eines weltweiten Reporting-Systems über 23 Standorte (SAP, ETL, BW, OLAP)." },
+  { year: "seit 2025", role: "KI-gestütztes Arbeiten — Selbststudium", company: "Berlin", desc: "Praxisorientierte Weiterbildung mit KI-Werkzeugen: Datenanalyse, Automatisierung, Webentwicklung. Diese Website ist das Ergebnis.", highlight: true },
+  { year: "2023–2025", role: "Projektcontroller Fördermittelmanagement", company: "VDI/VDE Innovation + Technik GmbH, Berlin", desc: "BMDV-Förderprojekte (mFUND) nach Zuwendungs- und Haushaltsrecht begleitet. Antragstellerberatung, Verwendungsnachweise, Steuerung der Mittelbereitstellung und -verwendung.", highlight: true },
+  { year: "2021–2023", role: "Selbstständige Immobilienprojekte", company: "Berlin", desc: "Eigenständige Suche, Planung und Umsetzung von zwei Immobilienprojekten." },
+  { year: "2021", role: "Data Science Weiterbildung", company: "Alfa Training, Berlin", desc: "Python, Statistik, Big Data Analytics, Data Engineering, Machine Learning." },
+  { year: "2019–2020", role: "Unternehmensentwicklung & Kundendienst", company: "SwitchUp GmbH, Berlin", desc: "Konzeption und Implementierung automatisierter Stromanbieter-Wechsel — vollständig automatisierter Wechselablauf ohne manuelle Eingriffe." },
+  { year: "2017–2019", role: "Gründer – Digitale Künstlerplattform (YAA)", company: "Berlin & Regensburg", desc: "Online-Plattform zur Förderung junger Künstler. Business Plan, Finanzierungskonzept, Website-Entwicklung, Netzwerkarbeit mit Kulturschaffenden und Investoren." },
+  { year: "2017", role: "Controlling in der Geschäftsführung", company: "Weihe GmbH, Berlin", desc: "Pricing-Tool zur wöchentlichen Preissteuerung im Lebensmittelhandel, automatisierte Reporting-Tools, Deckungsbeitrags- und Prozesskostenrechnungen, Neugestaltung des Berichtswesens." },
+  { year: "2010–2016", role: "Projekt- & Produktcontroller (Service)", company: "Krones AG, Neutraubling", desc: "Internationales Service-Controlling für Ersatzteile und Service-Pakete über mehrere LCS-Center weltweit. Hands-on für komplexe Analysen, Reports, Datenmodelle und Entscheidungsvorlagen.", highlight: true },
+  { year: "2008–2009", role: "Praktikum & Diplomarbeit Controlling", company: "Continental Automotive GmbH, Regensburg", desc: "R&D-Controlling, Entwicklung und Automatisierung eines weltweiten Reporting-Systems über 23 Standorte (SAP ERP, ETL, BW, OLAP)." },
 ];
 
 export default function Portfolio() {
@@ -172,9 +172,9 @@ export default function Portfolio() {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
           {[
-            { title: "Finanzen & Steuerung", accent: "#008c46", items: ["Projektcontrolling (Industrie & öffentlicher Sektor)", "Fördermittelmanagement (NKBF 2017, ANBest-P, BHO)", "Budgetierung, Forecasting, Abweichungsanalysen", "Verwendungsnachweise & Mittelabrufe (profi-Online)", "Deckungsbeitrags- und Ergebnisrechnung"] },
-            { title: "Daten & Technologie", accent: "#0066cc", items: ["Python (Pandas, Automatisierung, Web Scraping)", "SQL (Abfragen, Aggregationen, Views)", "KI-Tools im Arbeitsalltag (Claude, GPT)", "Reporting-Automatisierung & BI-Konzepte", "Data Science Grundlagen (ML, Statistik)"] },
-            { title: "Organisation & Denken", accent: "#cc7700", items: ["Prozesse analysieren und neu denken", "Stakeholder-Management (Ministerien, Partner)", "Unternehmerisches Handeln (Gründung & Selbstständigkeit)", "Komplexes einfach erklären und visualisieren", "Eigeninitiative — diese Seite ist der Beweis"] },
+            { title: "Finanzen & Steuerung", accent: "#008c46", items: ["Projektcontrolling (Industrie & öffentlicher Sektor)", "Fördermittelmanagement (NKBF 2017, ANBest-P, BHO)", "Budgetierung, Reporting, Mittelverwendung", "Verwendungsnachweise & Mittelabrufe (profi)", "Deckungsbeitrags- und Ergebnisrechnung"] },
+            { title: "Daten & Technologie", accent: "#0066cc", items: ["Python (Pandas, Automatisierung, Web Scraping)", "SAP ERP, DATEV, MS Excel/VBA", "KI-gestütztes Arbeiten (Claude)", "Reporting-Automatisierung (ETL, BW, OLAP)", "Data Science Grundlagen (ML, Statistik)"] },
+            { title: "Organisation & Denken", accent: "#cc7700", items: ["Komplexitätsbewältigung in heterogenen Systemen", "Schnittstellenkommunikation (Ministerien, Partner)", "Unternehmerisches Handeln (Gründung & Selbstständigkeit)", "Komplexes einfach erklären und visualisieren", "Pragmatische Hands-on-Mentalität"] },
           ].map((cat) => (
             <div key={cat.title} style={{ borderTop: `3px solid ${cat.accent}`, padding: "24px 0" }}>
               <h3 style={{ fontSize: 16, fontWeight: 600, color: "#111", marginBottom: 16 }}>{cat.title}</h3>
@@ -191,7 +191,7 @@ export default function Portfolio() {
         </div>
         <div style={{ marginTop: 40, padding: "20px 24px", background: "#fafafa", border: "1px solid #f0f0f0" }}>
           <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#999" }}>Sprachen: </span>
-          <span style={{ fontSize: 14, color: "#555" }}>Deutsch (Muttersprache) · Englisch (fließend) · Französisch (Grundkenntnisse)</span>
+          <span style={{ fontSize: 14, color: "#555" }}>Deutsch (Muttersprache) · Englisch (fließend) · Französisch (konversationsfähig)</span>
         </div>
       </section>
 
