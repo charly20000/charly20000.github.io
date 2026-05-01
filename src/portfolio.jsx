@@ -5,11 +5,11 @@ import Automatisierung from "./components/Automatisierung";
 const SECTIONS = ["hero", "profil", "kompetenz", "projekte", "kontakt"];
 
 const timeline = [
-  { year: "seit 2025", role: "KI-gestütztes Arbeiten — Selbststudium", company: "Berlin", desc: "Praxisorientierte Weiterbildung mit Claude und Claude Code. Datenanalyse, Automatisierung, Webentwicklung. Diese Website ist das Ergebnis.", highlight: true },
+  { year: "seit 2025", role: "Weiterbildung Automatisierung & Digitalisierung", company: "Berlin", desc: "Selbststudium im KI-gestützten Arbeiten: Datenanalyse, Prozessautomatisierung, Webentwicklung. Diese Website ist das Ergebnis.", highlight: true },
   { year: "2023–2025", role: "Projektcontroller Fördermittelmanagement", company: "VDI/VDE Innovation + Technik GmbH, Berlin", desc: "10–20 BMBF/BMWK-Förderprojekte parallel gesteuert. Beratung, Prüfung und finanzielle Begleitung im Auftrag von Ministerien.", highlight: true },
   { year: "2021–2023", role: "DIY Immobilienprojekte", company: "Berlin", desc: "Eigenständige Suche, Planung und Umsetzung von Immobilienprojekten. Marktanalysen und Projektsteuerung." },
   { year: "2021", role: "Data Science Weiterbildung", company: "Alfa Training, Berlin", desc: "Python (98 Pkt.), Statistik (100 Pkt.), Machine Learning (92 Pkt.), Big Data Analytics (98 Pkt.)." },
-  { year: "2019–2020", role: "Unternehmensentwicklung", company: "SwitchUp GmbH, Berlin", desc: "Aufbau und Optimierung von Geschäftsprozessen, Trend- und Entwicklungsanalysen." },
+  { year: "2019–2020", role: "Datenanalyse & Prozessoptimierung", company: "SwitchUp GmbH, Berlin", desc: "Auswertung operativer Kennzahlen, Trendanalysen für die Geschäftsführung, Digitalisierung interner Prozesse." },
   { year: "2017–2019", role: "Gründer – Digitale Künstlerplattform (YAA)", company: "Berlin", desc: "Business Plan, Finanzierung, Website-Entwicklung, Netzwerkarbeit mit Kulturschaffenden und Investoren." },
   { year: "2017", role: "Controlling in der Geschäftsführung", company: "Weihe GmbH, Berlin", desc: "Aufbau automatisierter Reporting-Tools, Pricing-Tool, Deckungsbeitrags- und Prozesskostenrechnungen." },
   { year: "2010–2016", role: "Projekt- & Produktcontroller (Service)", company: "Krones AG, Neutraubling", desc: "6 Jahre Controlling im Life Cycle Service eines Weltmarktführers im Maschinenbau. Analysen, Reports und Datenmodelle für den gesamten Servicebereich.", highlight: true },
@@ -78,7 +78,7 @@ export default function Portfolio() {
             Christoph<br /><span style={{ fontWeight: 700 }}>Zapp</span>
           </h1>
           <p style={{ fontSize: "clamp(15px, 2vw, 18px)", fontWeight: 300, color: "#777", maxWidth: 560, margin: "0 auto 40px", lineHeight: 1.7, opacity: 0, animation: "fadeInUp 0.8s 0.6s forwards" }}>
-            15 Jahre Erfahrung in Projektsteuerung, Fördermittelmanagement und Controlling — mit dem Anspruch, Prozesse nicht nur zu verwalten, sondern mit Daten und Technologie neu zu denken.
+            Seit 2008 im Controlling — von Industrie und Maschinenbau bis zum öffentlichen Fördermittelmanagement. Mit dem Anspruch, Prozesse mit Daten und aktuellen Werkzeugen weiterzuentwickeln.
           </p>
           <div style={{ display: "flex", gap: 16, justifyContent: "center", opacity: 0, animation: "fadeInUp 0.8s 0.8s forwards" }}>
             <button onClick={() => scrollTo("kontakt")} style={{ background: "#111", color: "#fff", border: "none", padding: "12px 28px", fontSize: 13, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.04em", cursor: "pointer", transition: "transform 0.2s, box-shadow 0.2s" }}
@@ -103,18 +103,18 @@ export default function Portfolio() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, marginBottom: 64 }}>
           <div>
             <p style={{ fontSize: 15, lineHeight: 1.8, color: "#666", marginBottom: 20 }}>
-              Ich bin kein klassischer Controller, der nur Zahlen liefert. Meine Stärke liegt darin, Zusammenhänge zu verstehen — zwischen Finanzen, Prozessen und den Menschen, die damit arbeiten. Bei <strong style={{ color: "#222" }}>VDI/VDE-IT</strong> habe ich 10–20 Förderprojekte parallel gesteuert, im Auftrag von BMBF und BMWK.
+              Bei <strong style={{ color: "#222" }}>VDI/VDE-IT</strong> habe ich Förderprojekte im mFUND-Programm und weiteren BMBF/BMWK-Linien beraten, begleitet und geprüft — Mittelbereitstellung, Mittelverwendung und Verwendungsnachweise in Abstimmung mit Ministerien, Fachbereichen und externen Prüfern.
             </p>
             <p style={{ fontSize: 15, lineHeight: 1.8, color: "#666" }}>
-              Sechs Jahre <strong style={{ color: "#222" }}>Krones AG</strong> haben mir beigebracht, wie ein Weltmarktführer im Maschinenbau tickt — vom Service-Controlling über Datenmodelle bis zur Abweichungsanalyse.
+              Sechs Jahre bei <strong style={{ color: "#222" }}>Krones AG</strong> haben das Fundament gelegt — Projekt- und Produktcontrolling im Life Cycle Service eines Maschinenbauers, mit Schwerpunkt auf komplexen Reports, Datenmodellen und Analysen für Geschäftsführung und Bereichsleitung.
             </p>
           </div>
           <div>
             <p style={{ fontSize: 15, lineHeight: 1.8, color: "#666", marginBottom: 20 }}>
-              Seit Ende 2025 arbeite ich intensiv mit <strong style={{ color: "#222" }}>KI-Werkzeugen</strong> — nicht als Trend, sondern als Methode. Mit Claude und Claude Code entwickle ich Lösungen, die Controlling-Fachwissen mit Automatisierung verbinden. Diese Website und die interaktiven Demos darunter sind vollständig so entstanden.
+              Seit Ende 2025 setze ich <strong style={{ color: "#222" }}>KI-Werkzeuge</strong> gezielt im Arbeitsalltag ein — als praktische Methode, nicht als Etikett. Diese Website und die interaktiven Demos darunter sind so entstanden: Controlling-Fachwissen, kombiniert mit aktuellen Werkzeugen zur Automatisierung und Datenanalyse.
             </p>
             <p style={{ fontSize: 15, lineHeight: 1.8, color: "#666" }}>
-              Durch eine eigene Gründung und selbstständige Immobilienprojekte denke ich unternehmerisch. Ich warte nicht auf Vorgaben — ich sehe, wo bestehende Prozesse mit neuen Werkzeugen besser laufen können, und baue eine Lösung.
+              Eine eigene Gründung und selbstständige Immobilienprojekte ergänzen das Profil um eine unternehmerische Perspektive — eigenverantwortliche Steuerung, kaufmännischer Blick auf Investitionen und das Denken aus Sicht des Unternehmers, nicht nur des Angestellten.
             </p>
           </div>
         </div>
@@ -122,10 +122,10 @@ export default function Portfolio() {
         {/* Kennzahlen */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 20, marginBottom: 64 }}>
           {[
-            { value: "15+", label: "Jahre Berufserfahrung", sub: "Controlling, Fördermittel, Unternehmensentwicklung" },
-            { value: "10–20", label: "Förderprojekte parallel", sub: "VDI/VDE-IT, BMBF/BMWK" },
+            { value: "seit 2008", label: "im Controlling", sub: "Industrie, Mittelstand, öffentlicher Sektor" },
+            { value: "BMBF/BMWK", label: "Förderprojekte", sub: "mFUND-Programm, BMDV" },
             { value: "6", label: "Jahre Maschinenbau", sub: "Krones AG, Life Cycle Service" },
-            { value: "KI", label: "als Arbeitswerkzeug", sub: "Claude, Python, Automatisierung seit 2025" },
+            { value: "KI", label: "im Arbeitsalltag", sub: "Python, Automatisierung seit 2025" },
           ].map((kpi) => (
             <div key={kpi.label} style={{ borderLeft: "2px solid #008c46", paddingLeft: 16 }}>
               <div style={{ fontSize: 28, fontWeight: 700, color: "#111", fontFamily: "'Space Mono', monospace", lineHeight: 1 }}>{kpi.value}</div>
@@ -198,9 +198,9 @@ export default function Portfolio() {
       {/* PROJEKTE */}
       <section id="projekte" style={{ padding: "120px 32px", maxWidth: 1000, margin: "0 auto" }}>
         <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: "0.3em", textTransform: "uppercase", color: "#008c46", marginBottom: 12 }}>03 — Projekte</div>
-        <h2 style={{ fontSize: 32, fontWeight: 300, color: "#111", marginBottom: 16, lineHeight: 1.3 }}>Gebaut mit <span style={{ fontWeight: 700 }}>KI</span></h2>
+        <h2 style={{ fontSize: 32, fontWeight: 300, color: "#111", marginBottom: 16, lineHeight: 1.3 }}>KI-gestützt <span style={{ fontWeight: 700 }}>entwickelt</span></h2>
         <p style={{ fontSize: 14, color: "#999", marginBottom: 48, maxWidth: 600 }}>
-          Diese interaktiven Demos habe ich mit Claude (Anthropic) entwickelt — nicht als Spielerei, sondern um zu zeigen, wie ich mit KI-Tools echte Fachprobleme löse. Die gesamte Website ist mein Arbeitsbeweis.
+          Diese interaktiven Demos habe ich mit aktuellen KI-Werkzeugen umgesetzt — um zu zeigen, wie ich solche Tools auf echte Fachprobleme aus Controlling und Fördermittelmanagement anwende. Die Website selbst ist Teil dieses Arbeitsbeweises.
         </p>
 
         <div style={{ display: "grid", gap: 12 }}>
