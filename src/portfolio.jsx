@@ -204,6 +204,45 @@ export default function Portfolio() {
         </p>
 
         <div style={{ display: "grid", gap: 12 }}>
+          {/* Verwendungsnachweis-Assistent */}
+          <div style={{
+            border: "1px solid #eee", padding: "24px 28px",
+            transition: "border-color 0.3s", background: "#fff",
+          }} onMouseEnter={(e) => e.currentTarget.style.borderColor = "#ddd"} onMouseLeave={(e) => e.currentTarget.style.borderColor = "#eee"}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 600, color: "#111" }}>Verwendungsnachweis-Assistent</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#999", marginTop: 4, letterSpacing: "0.05em" }}>KI-gestützter Beleg-Abgleich für Förderprojekte</div>
+              </div>
+              <span style={{ fontSize: 10, fontFamily: "'Space Mono', monospace", letterSpacing: "0.1em", textTransform: "uppercase", color: "#008c46", background: "rgba(0,140,70,0.06)", padding: "4px 10px", whiteSpace: "nowrap" }}>Live</span>
+            </div>
+            <p style={{ fontSize: 13, color: "#666", lineHeight: 1.7, marginTop: 12, marginBottom: 14 }}>
+              Web-Anwendung, die einen mFUND-Bewilligungsbescheid via Claude API ausliest und eine Belegliste gegen sieben Compliance-Regeln nach ANBest-P prüft (Bewilligungszeitraum, Vergaberecht, BRKG-Tagessätze, Doubletten, Kostenart-Abgleich). Output: ein vorausgefüllter Verwendungsnachweis als Excel-Datei mit Soll-Ist-Vergleich und Prüfprotokoll. Streamlit + Python, deployed auf Streamlit Community Cloud.
+            </p>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+              {["Streamlit", "Claude API", "ANBest-P", "BRKG", "Excel-Export"].map((tag) => (
+                <span key={tag} style={{ fontSize: 10, fontFamily: "'Space Mono', monospace", color: "#999", border: "1px solid #e8e8e8", padding: "2px 8px", letterSpacing: "0.02em" }}>{tag}</span>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <a href="https://verwendungsnachweis-assistent.streamlit.app" target="_blank" rel="noopener noreferrer" style={{
+                display: "inline-block", background: "#008c46", color: "#fff", border: "none", padding: "10px 22px",
+                fontSize: 13, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.04em",
+                textDecoration: "none", cursor: "pointer", transition: "background 0.3s",
+              }} onMouseEnter={(e) => e.target.style.background = "#006d36"} onMouseLeave={(e) => e.target.style.background = "#008c46"}>
+                Live-Demo öffnen
+              </a>
+              <a href="https://github.com/charly20000/Verwendungsnachweis-Assistent" target="_blank" rel="noopener noreferrer" style={{
+                display: "inline-block", background: "transparent", color: "#333", border: "1px solid rgba(0,0,0,0.15)",
+                padding: "10px 22px", fontSize: 13, fontWeight: 500, fontFamily: "'DM Sans', sans-serif",
+                letterSpacing: "0.04em", textDecoration: "none", cursor: "pointer", transition: "border-color 0.3s",
+              }} onMouseEnter={(e) => e.target.style.borderColor = "#008c46"} onMouseLeave={(e) => e.target.style.borderColor = "rgba(0,0,0,0.15)"}>
+                Code auf GitHub
+              </a>
+            </div>
+          </div>
+
+          {/* Fördermittel-Daten-Pipeline & Prozessautomatisierung */}
           {[
             { id: "foerdermittel", icon: "⚙️", title: "Fördermittel-Daten-Pipeline", desc: "ETL-Prozess für BMBF/BMWK-Förderprojekte. Vom Rohdaten-Import (Excel, SAP, profi-Online) über Validierung gegen den Finanzierungsplan bis zur automatisierten Fehlererkennung.", tags: ["ETL", "Zuwendungsrecht", "NKBF 2017", "profi-Online"], why: "Zeigt mein Fördermittel-Fachwissen in einer technischen Anwendung." },
             { id: "automatisierung", icon: "🔄", title: "Prozessautomatisierung Fördermittel", desc: "Analyse von 15 manuellen Prozessen im Fördermittel-Controlling. Ergebnis: 93% Effizienzgewinn, ~47 Arbeitstage Einsparung pro Projekt/Jahr.", tags: ["Prozessanalyse", "Automatisierung", "ROI"], why: "Zeigt, wie ich Prozesse systematisch hinterfrage und verbessere." },
