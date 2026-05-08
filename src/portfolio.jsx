@@ -1,11 +1,8 @@
 import { useState, useEffect } from "react";
-import FoerdermittelPipeline from "./components/FoerdermittelPipeline";
-import Automatisierung from "./components/Automatisierung";
 
 const SECTIONS = ["hero", "profil", "kompetenz", "projekte", "kontakt"];
 
 const timeline = [
-  { year: "seit 2025", role: "KI-gestütztes Arbeiten — Selbststudium", company: "Berlin", desc: "Praxisorientierte Weiterbildung mit KI-Werkzeugen: Datenanalyse, Automatisierung, Webentwicklung. Diese Website ist das Ergebnis.", highlight: true },
   { year: "2023–2025", role: "Projektcontroller Fördermittelmanagement", company: "VDI/VDE Innovation + Technik GmbH, Berlin", desc: "BMDV-Förderprojekte (mFUND) nach Zuwendungs- und Haushaltsrecht begleitet. Antragstellerberatung, Verwendungsnachweise, Steuerung der Mittelbereitstellung und -verwendung.", highlight: true },
   { year: "2021–2023", role: "Selbstständige Immobilienprojekte", company: "Berlin", desc: "Eigenständige Suche, Planung und Umsetzung von zwei Immobilienprojekten." },
   { year: "2021", role: "Data Science Weiterbildung", company: "Alfa Training, Berlin", desc: "Python, Statistik, Big Data Analytics, Data Engineering, Machine Learning." },
@@ -19,7 +16,6 @@ const timeline = [
 export default function Portfolio() {
   const [activeSection, setActiveSection] = useState("hero");
   const [scrollY, setScrollY] = useState(0);
-  const [openDemo, setOpenDemo] = useState(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -280,46 +276,7 @@ export default function Portfolio() {
               </a>
             </div>
           </div>
-
-          {/* Fördermittel-Daten-Pipeline & Prozessautomatisierung */}
-          {[
-            { id: "foerdermittel", icon: "⚙️", title: "Fördermittel-Daten-Pipeline", desc: "ETL-Prozess für BMBF/BMWK-Förderprojekte. Vom Rohdaten-Import (Excel, SAP, profi-Online) über Validierung gegen den Finanzierungsplan bis zur automatisierten Fehlererkennung.", tags: ["ETL", "Zuwendungsrecht", "NKBF 2017", "profi-Online"], why: "Zeigt mein Fördermittel-Fachwissen in einer technischen Anwendung." },
-            { id: "automatisierung", icon: "🔄", title: "Prozessautomatisierung Fördermittel", desc: "Analyse von 15 manuellen Prozessen im Fördermittel-Controlling. Ergebnis: 93% Effizienzgewinn, ~47 Arbeitstage Einsparung pro Projekt/Jahr.", tags: ["Prozessanalyse", "Automatisierung", "ROI"], why: "Zeigt, wie ich Prozesse systematisch hinterfrage und verbessere." },
-          ].map((project) => (
-            <div key={project.id}>
-              <div onClick={() => setOpenDemo(openDemo === project.id ? null : project.id)} style={{
-                border: "1px solid #eee", padding: "24px 28px", cursor: "pointer",
-                transition: "border-color 0.3s", background: openDemo === project.id ? "#fafafa" : "#fff",
-                borderBottom: openDemo === project.id ? "none" : "1px solid #eee",
-              }} onMouseEnter={(e) => e.currentTarget.style.borderColor = "#ddd"} onMouseLeave={(e) => e.currentTarget.style.borderColor = "#eee"}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ fontSize: 24 }}>{project.icon}</span>
-                    <div>
-                      <div style={{ fontSize: 17, fontWeight: 600, color: "#111" }}>{project.title}</div>
-                      <div style={{ fontSize: 12, color: "#999", marginTop: 2 }}>{project.why}</div>
-                    </div>
-                  </div>
-                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 18, color: "#ccc", transform: openDemo === project.id ? "rotate(45deg)" : "rotate(0deg)", transition: "transform 0.3s" }}>+</span>
-                </div>
-                {openDemo !== project.id && (
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-                    {project.tags.map((tag) => (
-                      <span key={tag} style={{ fontSize: 10, fontFamily: "'Space Mono', monospace", color: "#999", border: "1px solid #e8e8e8", padding: "2px 8px", letterSpacing: "0.02em" }}>{tag}</span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {openDemo === project.id && (
-                <div style={{ border: "1px solid #eee", borderTop: "none", background: "#fafafa" }}>
-                  {project.id === "foerdermittel" && <FoerdermittelPipeline />}
-                  {project.id === "automatisierung" && <Automatisierung />}
-                </div>
-              )}
-            </div>
-          ))}
         </div>
-        <p style={{ fontSize: 12, color: "#bbb", marginTop: 24, fontStyle: "italic" }}>Weitere Projekte (Beschaffungsoptimierung, Sanierungsrechner) auf Anfrage verfügbar.</p>
       </section>
 
       {/* KONTAKT */}
