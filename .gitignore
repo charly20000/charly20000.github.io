@@ -27,3 +27,6 @@ dist-ssr
 scraper/.env
 __pycache__/
 *.pyc
+
+# Musterdepot (interne Zwischenstände)
+musterdepot/site/

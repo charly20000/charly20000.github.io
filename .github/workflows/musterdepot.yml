@@ -1,0 +1,56 @@
+name: Musterdepot aktualisieren
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"   # montags 06:17 UTC: Warnregeln prüfen und Seite neu bauen
+    - cron: "17 6 2 * *"   # am 2. jedes Monats: Monatsabschluss
+  workflow_dispatch:        # manuell über "Run workflow" startbar
+
+permissions:
+  contents: write
+
+concurrency:
+  group: musterdepot
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: musterdepot
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+
+      - name: Depot fortschreiben
+        run: python depot.py --quelle simuliert   # später: --quelle csv nach dem Kursabruf
+
+      - name: Gegenrechnung
+        run: python gegenrechnung.py
+
+      - name: Seite und Excel-Fassung bauen
+        run: |
+          python build_site.py
+          python build_excel.py --quelle simuliert
+
+      - name: Warnregeln prüfen und ggf. Mail senden
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_TO:   ${{ secrets.MAIL_TO }}
+        run: python alerts.py
+
+      - name: Stand ins Repository schreiben
+        run: |
+          git config user.name  "musterdepot-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add ../public/musterdepot data/warnstatus.json
+          git diff --cached --quiet || git commit -m "Musterdepot: Update $(date -u +%Y-%m-%d)"
+          git push
+      # Die Veröffentlichung übernimmt deploy.yml (startet nach diesem Workflow).

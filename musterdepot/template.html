@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Musterdepot-Monitoring · Christoph Zapp</title>
+<link rel="icon" type="image/svg+xml" href="/vite.svg">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<meta name="description" content="Monatliches Kapitalanlagereporting und Risikoüberwachung für ein fiktives Musterdepot mit 1 Mio. €: Allokation, Kennzahlen, Value at Risk, Stresstests und Warnregeln.">
+<style>
+.viz-root{
+  color-scheme:light;
+  --surface-0:#f4f3f0; --surface-1:#fcfcfb; --border:#e2e0da; --grid:#ebe9e4;
+  --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#7a7873;
+  --series-1:#2a78d6; --series-2:#eb6834; --band:#2a78d61f;
+  --good:#0ca30c; --warning:#fab219; --critical:#d03b3b; --accent:#008c46;
+}
+@media (prefers-color-scheme:dark){
+  :root:where(:not([data-theme="light"])) .viz-root{
+    color-scheme:dark;
+    --surface-0:#121211; --surface-1:#1a1a19; --border:#33332f; --grid:#2a2a27;
+    --text-primary:#f0efec; --text-secondary:#c3c2b7; --text-muted:#94938b;
+    --series-1:#3987e5; --series-2:#d95926; --band:#3987e526; --accent:#2fb46c;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:'DM Sans',Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5}
+.viz-root{background:var(--surface-0);color:var(--text-primary);min-height:100vh}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 20px 60px}
+header.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;border-bottom:2px solid var(--accent);padding-bottom:14px;margin-bottom:22px}
+header.top h1{margin:0;font-size:28px;font-weight:300;color:var(--text-primary)}
+header.top h1 b{font-weight:700}
+header.top p{margin:2px 0 0;color:var(--text-secondary)}
+.back{color:var(--text-secondary);font-size:13px;text-decoration:none}
+.back:hover{text-decoration:underline}
+.badge{display:inline-block;font-size:12px;font-weight:bold;padding:3px 8px;border-radius:4px;border:1px solid var(--warning);color:var(--text-primary);background:#fab2191f;margin-left:6px}
+.stand{font-size:13px;color:var(--text-secondary);text-align:right}
+.grid{display:grid;gap:16px}
+.tiles{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:16px}
+.card{min-width:0;background:var(--surface-1);border:1px solid var(--border);border-radius:8px;padding:16px 18px}
+.tile .label{font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.03em}
+.tile .value{font-size:22px;white-space:nowrap;font-weight:bold;margin-top:4px;font-variant-numeric:tabular-nums}
+.tile .sub{font-size:12px;color:var(--text-muted)}
+h2{font-size:17px;margin:0 0 4px}
+.card > .lead{margin:0 0 12px;color:var(--text-secondary);font-size:13px}
+.two{grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+section{margin-top:16px}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--text-secondary);margin:0 0 6px;flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:14px;height:3px;border-radius:2px;background:var(--c);vertical-align:middle;margin-right:6px}
+.legend span.box::before{height:10px;width:10px}
+.legend span.dash::before{background:repeating-linear-gradient(90deg,var(--c) 0 4px,transparent 4px 7px)}
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{font-size:11px;fill:var(--text-secondary);font-family:'DM Sans',Arial,sans-serif}
+.chart .gridline{stroke:var(--grid);stroke-width:1}
+.chart .axis{stroke:var(--border)}
+.tip{position:absolute;pointer-events:none;background:var(--surface-1);border:1px solid var(--border);border-radius:6px;padding:6px 9px;font-size:12px;box-shadow:0 2px 8px #0002;white-space:nowrap;display:none;z-index:2}
+.tip b{display:block;margin-bottom:2px}
+.tip i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;font-style:normal}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:6px 8px;border-bottom:1px solid var(--grid);text-align:right}
+th:first-child,td:first-child{text-align:left}
+td:not(:first-child){white-space:nowrap}
+th{color:var(--text-secondary);font-weight:normal;font-size:12px}
+details{margin-top:8px;font-size:13px}
+summary{cursor:pointer;color:var(--text-secondary)}
+.status{display:inline-flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap}
+.status .dot{width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;font-size:11px;font-weight:bold;line-height:1}
+.st-ok .dot{background:var(--good)} .st-beobachten .dot{background:var(--warning);color:#111} .st-handeln .dot{background:var(--critical)}
+.alerts{list-style:none;margin:0;padding:0}
+.alerts li{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--grid)}
+.alerts li:last-child{border-bottom:0}
+.tblwrap{overflow-x:auto}
+.alerts .r{white-space:nowrap;color:var(--text-secondary);font-size:13px;text-align:right}
+.prose p{margin:0 0 10px;color:var(--text-secondary)}
+.prose h3{font-size:14px;margin:14px 0 4px;color:var(--text-primary)}
+.prose a{color:var(--accent)}
+.prose ul{margin:0 0 10px;padding-left:18px;color:var(--text-secondary)}
+.disclaimer{margin-top:16px;font-size:12px;color:var(--text-muted);border-left:3px solid var(--warning);padding:8px 12px;background:var(--surface-1)}
+footer{margin-top:24px;font-size:12px;color:var(--text-muted);display:flex;gap:16px;flex-wrap:wrap}
+footer a{color:var(--text-secondary)}
+a.pos{color:var(--text-primary);text-decoration:none;border-bottom:1px dotted var(--text-muted)}
+a.pos:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.hint{font-size:12px;color:var(--text-muted);margin:6px 0 0}
+#detail{display:none}
+.detail-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.detail-head h2{font-size:22px;color:var(--text-primary);margin:4px 0 2px}
+.detail-head .meta{color:var(--text-secondary);font-size:13px}
+.navbtns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{display:inline-block;font-size:13px;padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface-1);color:var(--text-primary);text-decoration:none}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.kv{display:grid;grid-template-columns:1fr auto;gap:0;font-size:13px}
+.kv div{padding:6px 0;border-bottom:1px solid var(--grid)}
+.kv div:nth-child(odd){color:var(--text-secondary)}
+.kv div:nth-child(even){text-align:right;font-variant-numeric:tabular-nums}
+.chart .clickable{cursor:pointer}
+@media (max-width:520px){.two{grid-template-columns:1fr}.tile .value{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="viz-root">
+<div class="wrap">
+  <a class="back" href="/#projekte">← christoph-zapp.de</a>
+  <header class="top">
+    <div>
+      <h1>Musterdepot-<b>Monitoring</b></h1>
+      <p>Monatliches Kapitalanlagereporting und Risikoüberwachung für ein fiktives Depot mit 1 Mio. € Startkapital</p>
+    </div>
+    <div class="stand" id="stand"></div>
+  </header>
+
+  <div id="detail"></div>
+  <div id="uebersicht">
+  <div class="grid tiles" id="tiles"></div>
+
+  <div class="grid two">
+    <div class="card">
+      <h2>Warnregeln</h2>
+      <p class="lead">Wöchentlich geprüft. Greift eine Regel, geht automatisch eine E-Mail raus.</p>
+      <ul class="alerts" id="alerts"></ul>
+    </div>
+    <div class="card">
+      <h2>Risiko auf einen Monat</h2>
+      <p class="lead" id="varlead"></p>
+      <table id="vartable"></table>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2>Wertentwicklung</h2>
+    <p class="lead">Depotwert indexiert (Start = 100), nach laufenden Kosten der Fonds.</p>
+    <div class="chart" id="c-index"></div>
+    <details><summary>Als Tabelle anzeigen</summary><div id="t-index"></div></details>
+  </section>
+
+  <div class="grid two">
+    <section class="card">
+      <h2>Drawdown</h2>
+      <p class="lead">Abstand zum bisherigen Höchststand.</p>
+      <div class="chart" id="c-dd"></div>
+    </section>
+    <section class="card">
+      <h2>Trendsignal Aktienteil</h2>
+      <div class="legend"><span style="--c:var(--series-1)">Aktienteil (indexiert)</span><span class="dash" style="--c:var(--series-2)">10-Monats-Durchschnitt</span></div>
+      <div class="chart" id="c-trend"></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Aktienquote und Toleranzband</h2>
+    <p class="lead" id="quotelead"></p>
+    <div class="chart" id="c-quote"></div>
+  </section>
+
+  <section class="card">
+    <h2>Allokation: Soll und Ist</h2>
+    <div class="legend"><span class="box" style="--c:var(--series-1)">Ist</span><span class="box" style="--c:var(--series-2)">Soll</span></div>
+    <div class="chart" id="c-alloc"></div>
+    <p class="hint">Auf einen Balken oder Fondsnamen klicken, um die Einzelanalyse zu öffnen.</p>
+    <div class="tblwrap"><table id="alloctable" style="margin-top:12px"></table></div>
+  </section>
+
+  <div class="grid two">
+    <section class="card">
+      <h2>Stresstests</h2>
+      <p class="lead">Sofortiger Bewertungseffekt auf den aktuellen Bestand. Anleihen über die Duration.</p>
+      <div class="chart" id="c-stress"></div>
+      <details><summary>Als Tabelle anzeigen</summary><table id="stresstable"></table></details>
+    </section>
+    <section class="card">
+      <h2>Rebalancing-Protokoll</h2>
+      <p class="lead" id="rebalead"></p>
+      <div class="tblwrap"><table id="rebatable"></table></div>
+    </section>
+  </div>
+
+  <section class="card prose">
+    <h2>Methodik</h2>
+    <h3>Strategie</h3>
+    <p>Das Depot hält 80 % Aktien und 20 % Anleihen. Die Aktienregionen sind nach Wirtschaftsleistung gewichtet. Die Zielgewichte orientieren sich am Mittel aus dem norwegischen Staatsfonds und dem Portfolio One. Anleihen teilen sich auf kurzlaufende Staatsanleihen, einen gemischten Rentenfonds und Unternehmensanleihen auf. Alle neun Fonds sind erfunden. Laufende Kosten und Duration sind marktüblich angesetzt.</p>
+    <h3>Steuerung</h3>
+    <ul>
+      <li>Die Aktienquote darf um 5 Prozentpunkte vom Ziel abweichen. Verlässt sie das Band, wird zum Monatsende auf die Zielgewichte zurückgeführt.</li>
+      <li>Unabhängig davon wird jedes Jahr im Januar umgeschichtet.</li>
+      <li>Einzelpositionen gelten als auffällig, wenn sie mehr als 10 % relativ vom Soll abweichen. Ab 20 % besteht Handlungsbedarf.</li>
+    </ul>
+    <h3>Kennzahlen</h3>
+    <ul>
+      <li>Die Rendite p. a. ist geometrisch berechnet, die Volatilität aus Monatsrenditen annualisiert.</li>
+      <li>Für die Sharpe Ratio wird ein risikofreier Zins von 2 % angenommen.</li>
+      <li>Der Value at Risk (VaR) ist der Verlust, der in einem Monat mit 95 % Wahrscheinlichkeit nicht überschritten wird.</li>
+      <li>Berechnet wird der VaR historisch aus den letzten 36 Monaten und per Monte-Carlo-Simulation mit 20.000 Pfaden auf Basis der Kovarianzen derselben Monate. Der Expected Shortfall ist der durchschnittliche Verlust jenseits dieser Schwelle.</li>
+    </ul>
+    <h3>Technik</h3>
+    <p>Ein Python-Skript schreibt das Depot jeden Monat fort und erzeugt diese Seite neu. Es läuft zeitgesteuert über GitHub Actions. Die Warnregeln werden wöchentlich geprüft. Die Seite ist statisch, lädt nichts von Drittanbietern und setzt keine Cookies. Entwickelt wurde sie mit Unterstützung von Claude (Anthropic). Die Kennzahlen werden bei jedem Lauf durch eine unabhängige Gegenrechnung geprüft.</p>
+    <p>Alle Berechnungen gibt es auch als <a href="Musterdepot_Zapp.xlsx" download>Excel-Arbeitsmappe</a>, mit Formeln statt festen Werten. Jede Zahl lässt sich dort bis zu den Rohdaten zurückverfolgen.</p>
+  </section>
+
+  </div>
+  <p class="disclaimer" id="disclaimer"></p>
+
+  <footer><a href="/#impressum">Impressum</a><a href="/#datenschutz">Datenschutz</a><span>Stand der Daten: <span id="stand2"></span></span></footer>
+</div>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const DATA = /*DATA*/null;
+
+const nf0 = new Intl.NumberFormat('de-DE',{maximumFractionDigits:0});
+const eur = v => nf0.format(Math.round(v)).replace('-','−') + ' €';
+const pct = (v,d=1,sign=false) => { if(Math.abs(v)<5e-10) v=0; return (sign && v>0?'+':'') + (v*100).toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d}).replace('-','−') + ' %'; };
+const monat = s => { const [y,m]=s.split('-'); return ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'][+m-1]+' '+y; };
+const css = n => getComputedStyle(document.querySelector('.viz-root')).getPropertyValue(n).trim();
+const el = (t,a={},h='') => { const e=document.createElementNS('http://www.w3.org/2000/svg',t); for(const k in a) e.setAttribute(k,a[k]); if(h) e.textContent=h; return e; };
+const tip = document.getElementById('tip');
+function showTip(html, ev){ tip.innerHTML=html; tip.style.display='block'; const r=tip.getBoundingClientRect(); let x=ev.pageX+14, y=ev.pageY-r.height-10; if(x+r.width>window.scrollX+innerWidth-8) x=ev.pageX-r.width-14; if(y<window.scrollY+4) y=ev.pageY+16; tip.style.left=x+'px'; tip.style.top=y+'px'; }
+function hideTip(){ tip.style.display='none'; }
+function niceTicks(min,max,n=5){ const span=max-min||1; const step0=span/n; const mag=Math.pow(10,Math.floor(Math.log10(step0))); const step=[1,2,2.5,5,10].map(s=>s*mag).find(s=>span/s<=n)||step0; const t=[]; for(let v=Math.ceil(min/step)*step; v<=max+1e-9; v+=step) t.push(+v.toFixed(10)); return t; }
+
+/* Linienchart mit Fadenkreuz-Tooltip. series: [{name, values, color, dash, area}] */
+function lineChart(id, labels, series, o={}){
+  const host=document.getElementById(id); host.innerHTML='';
+  const W=host.clientWidth||700, H=o.h||240, m={t:12,r:o.r||16,b:26,l:46};
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':o.aria||''});
+  const all=series.flatMap(s=>s.values).filter(v=>v!=null).concat(o.extra||[]);
+  let lo=o.min!=null?o.min:Math.min(...all), hi=o.max!=null?o.max:Math.max(...all);
+  const pad=(hi-lo)*0.06; if(o.min==null) lo-=pad; if(o.max==null) hi+=pad;
+  const ticks=niceTicks(lo,hi,4); lo=Math.min(lo,ticks[0]); hi=Math.max(hi,ticks[ticks.length-1]);
+  const x=i=>m.l+i*(W-m.l-m.r)/(labels.length-1), y=v=>m.t+(hi-v)*(H-m.t-m.b)/(hi-lo);
+  if(o.band){ svg.appendChild(el('rect',{x:m.l,y:y(o.band[1]),width:W-m.l-m.r,height:y(o.band[0])-y(o.band[1]),fill:css('--band')})); }
+  ticks.forEach(t=>{ svg.appendChild(el('line',{x1:m.l,x2:W-m.r,y1:y(t),y2:y(t),class:'gridline'})); svg.appendChild(el('text',{x:m.l-6,y:y(t)+4,'text-anchor':'end'},o.fmt?o.fmt(t):t)); });
+  if(o.ref!=null) svg.appendChild(el('line',{x1:m.l,x2:W-m.r,y1:y(o.ref),y2:y(o.ref),stroke:css('--text-muted'),'stroke-width':1}));
+  labels.forEach((l,i)=>{ if(l.endsWith('-01')) svg.appendChild(el('text',{x:x(i),y:H-8,'text-anchor':'middle'},l.slice(0,4))); });
+  series.forEach(s=>{
+    const pts=s.values.map((v,i)=>v==null?null:[x(i),y(v)]);
+    const d=pts.reduce((a,p,i)=>p?a+(a&&pts[i-1]?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1):a,'');
+    if(s.area){ const base=y(o.areaBase??0); const valid=pts.filter(Boolean); svg.appendChild(el('path',{d:`M${valid[0][0]},${base}`+valid.map(p=>`L${p[0].toFixed(1)},${p[1].toFixed(1)}`).join('')+`L${valid[valid.length-1][0]},${base}Z`,fill:s.color,opacity:.16})); }
+    svg.appendChild(el('path',{d,fill:'none',stroke:s.color,'stroke-width':2,'stroke-linejoin':'round','stroke-dasharray':s.dash?'5 4':'none'}));
+  });
+  const cross=el('line',{y1:m.t,y2:H-m.b,stroke:css('--text-muted'),'stroke-width':1,visibility:'hidden'}); svg.appendChild(cross);
+  const dots=series.map(s=>{ const c=el('circle',{r:4.5,fill:s.color,stroke:css('--surface-1'),'stroke-width':2,visibility:'hidden'}); svg.appendChild(c); return c; });
+  const hit=el('rect',{x:m.l,y:0,width:W-m.l-m.r,height:H,fill:'transparent'}); svg.appendChild(hit);
+  hit.addEventListener('mousemove',ev=>{
+    const r=svg.getBoundingClientRect(); const px=(ev.clientX-r.left)*W/r.width;
+    const i=Math.max(0,Math.min(labels.length-1,Math.round((px-m.l)/((W-m.l-m.r)/(labels.length-1)))));
+    cross.setAttribute('x1',x(i)); cross.setAttribute('x2',x(i)); cross.setAttribute('visibility','visible');
+    let h=`<b>${monat(labels[i])}</b>`;
+    series.forEach((s,k)=>{ const v=s.values[i]; if(v==null){dots[k].setAttribute('visibility','hidden');return;} dots[k].setAttribute('cx',x(i)); dots[k].setAttribute('cy',y(v)); dots[k].setAttribute('visibility','visible'); h+=`<div><i style="background:${s.color}"></i>${s.name}: ${o.fmt?o.fmt(v,true):v}</div>`; });
+    showTip(h,ev);
+  });
+  hit.addEventListener('mouseleave',()=>{ hideTip(); cross.setAttribute('visibility','hidden'); dots.forEach(d=>d.setAttribute('visibility','hidden')); });
+  host.appendChild(svg);
+}
+
+/* Horizontale Balken; groups: [{label, values:[{name,v,color}]}] */
+function barH(id, groups, o={}){
+  const host=document.getElementById(id); host.innerHTML='';
+  const per=groups[0].values.length, bh=o.bh||9, gap=2, rowH=per*bh+(per-1)*gap+(o.stacked?28:12);
+  const W=host.clientWidth||700, m={t:6,r:58,b:22,l:o.l||210}, H=m.t+m.b+groups.length*rowH;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':o.aria||''});
+  const vals=groups.flatMap(g=>g.values.map(v=>v.v)); let lo=Math.min(0,...vals), hi=Math.max(0,...vals);
+  const ticks=niceTicks(lo,hi,4); lo=Math.min(lo,ticks[0]); hi=Math.max(hi,ticks[ticks.length-1]);
+  const x=v=>m.l+(v-lo)*(W-m.l-m.r)/(hi-lo);
+  ticks.forEach(t=>{ svg.appendChild(el('line',{x1:x(t),x2:x(t),y1:m.t,y2:H-m.b,class:'gridline'})); svg.appendChild(el('text',{x:x(t),y:H-6,'text-anchor':'middle'},o.fmt(t))); });
+  svg.appendChild(el('line',{x1:x(0),x2:x(0),y1:m.t,y2:H-m.b,stroke:css('--text-muted')}));
+  groups.forEach((g,gi)=>{
+    const y0=m.t+gi*rowH+(o.stacked?20:6);
+    if(o.stacked) svg.appendChild(el('text',{x:m.l,y:y0-6,style:'fill:var(--text-primary)'},g.label));
+    else svg.appendChild(el('text',{x:m.l-8,y:y0+(per*bh+(per-1)*gap)/2+4,'text-anchor':'end',style:'fill:var(--text-primary)'},g.label));
+    g.values.forEach((v,k)=>{
+      const yy=y0+k*(bh+gap), x1=x(Math.min(0,v.v)), w=Math.max(1,Math.abs(x(v.v)-x(0)));
+      const rx=Math.min(4,bh/2), neg=v.v<0;
+      const p=neg?`M${x1+w},${yy}H${x1+rx}Q${x1},${yy} ${x1},${yy+rx}V${yy+bh-rx}Q${x1},${yy+bh} ${x1+rx},${yy+bh}H${x1+w}Z`
+                 :`M${x1},${yy}H${x1+w-rx}Q${x1+w},${yy} ${x1+w},${yy+rx}V${yy+bh-rx}Q${x1+w},${yy+bh} ${x1+w-rx},${yy+bh}H${x1}Z`;
+      const bar=el('path',{d:p,fill:v.color}); svg.appendChild(bar);
+      if(o.labels && k===0){ const lx=neg?(o.negInside?x(0)+6:x1-4):x1+w+4; svg.appendChild(el('text',{x:lx,y:yy+bh-1,'text-anchor':neg&&!o.negInside?'end':'start'},o.fmt(v.v,true))); }
+      const hit=el('rect',{x:m.l,y:yy-1,width:W-m.l-m.r,height:bh+2,fill:'transparent'});
+      hit.addEventListener('mousemove',ev=>showTip(`<b>${g.label}</b>`+g.values.map(q=>`<div><i style="background:${q.color}"></i>${q.name}: ${o.fmt(q.v,true)}</div>`).join('')+(g.href?'<div style="color:var(--text-muted);margin-top:3px">Klicken für Einzelanalyse</div>':''),ev));
+      hit.addEventListener('mouseleave',hideTip);
+      if(g.href){ hit.classList.add('clickable'); hit.setAttribute('role','link'); hit.setAttribute('aria-label',g.label+' – Einzelanalyse öffnen'); hit.addEventListener('click',()=>{hideTip(); location.hash=g.href;}); }
+      svg.appendChild(hit);
+    });
+  });
+  host.appendChild(svg);
+}
+
+function table(id, head, rows){ document.getElementById(id).innerHTML='<thead><tr>'+head.map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(c=>`<td>${c}</td>`).join('')+'</tr>').join('')+'</tbody>'; }
+const statusHtml = s => ({ok:'<span class="status st-ok"><span class="dot">✓</span>im Rahmen</span>',beobachten:'<span class="status st-beobachten"><span class="dot">!</span>beobachten</span>',handeln:'<span class="status st-handeln"><span class="dot">✕</span>handeln</span>'})[s];
+
+function render(){
+  const D=DATA, k=D.kennzahlen, z=D.zeitreihe, L=z.map(r=>r.datum);
+  const s1=css('--series-1'), s2=css('--series-2');
+  const standTxt=new Date(D.meta.stand).toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'});
+  document.getElementById('stand').innerHTML=`Stand ${standTxt}${D.meta.testdaten?'<span class="badge">Testdaten</span>':''}<br>Start ${monat(D.meta.start.slice(0,7))} mit ${eur(D.meta.startkapital)}`;
+  document.getElementById('stand2').textContent=standTxt+' · '+D.meta.quelle;
+  const tiles=[['Depotwert',eur(k.wert),pct(k.rendite_gesamt,1,true)+' seit Start'],['Rendite p. a.',pct(k.rendite_pa,1,true),'geometrisch'],['Laufendes Jahr',pct(k.rendite_lfd_jahr,1,true),'letzter Monat '+pct(k.rendite_letzter_monat,1,true)],['Volatilität p. a.',pct(k.volatilitaet_pa),'Sharpe '+k.sharpe.toLocaleString('de-DE')],['Max. Drawdown',pct(k.max_drawdown),monat(k.max_drawdown_datum)],['Drawdown aktuell',pct(k.drawdown_aktuell),'zum Höchststand']];
+  document.getElementById('tiles').innerHTML=tiles.map(t=>`<div class="card tile"><div class="label">${t[0]}</div><div class="value">${t[1]}</div><div class="sub">${t[2]}</div></div>`).join('');
+  document.getElementById('alerts').innerHTML=D.warnungen.map(w=>`<li><span>${w.aktiv?'<span class="status st-handeln"><span class="dot">!</span>ausgelöst</span>':'<span class="status st-ok"><span class="dot">✓</span>ruhig</span>'} &nbsp;${w.regel}</span><span class="r">${w.wert}</span></li>`).join('');
+  const v=D.var;
+  document.getElementById('varlead').textContent=`Konfidenz ${pct(v.konfidenz,0)}, Datenbasis ${v.fenster_monate} Monate, ${nf0.format(v.simulationen)} Simulationen.`;
+  table('vartable',['Maß','Anteil','Betrag'],[['VaR historisch',pct(-v.historisch_pct),eur(-v.historisch_eur)],['VaR Monte Carlo',pct(-v.montecarlo_pct),eur(-v.montecarlo_eur)],['Expected Shortfall',pct(-v.expected_shortfall_pct),eur(-v.expected_shortfall_eur)]]);
+
+  const idxFmt=(t,tip)=>tip?t.toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1}):t;
+  lineChart('c-index',L,[{name:'Depot',values:z.map(r=>r.index),color:s1}],{fmt:idxFmt,ref:100,aria:'Wertentwicklung des Musterdepots, indexiert'});
+  document.getElementById('t-index').innerHTML='<table><thead><tr><th>Monat</th><th>Index</th><th>Drawdown</th><th>Aktienquote</th></tr></thead><tbody>'+z.slice().reverse().map(r=>`<tr><td>${monat(r.datum)}</td><td>${r.index.toLocaleString('de-DE',{minimumFractionDigits:2})}</td><td>${pct(r.drawdown)}</td><td>${pct(r.aktienquote)}</td></tr>`).join('')+'</tbody></table>';
+  lineChart('c-dd',L,[{name:'Drawdown',values:z.map(r=>r.drawdown),color:s1,area:true}],{max:0,fmt:(t)=>pct(t,0),ref:0,h:200,aria:'Drawdown'});
+  lineChart('c-trend',L,[{name:'Aktienteil',values:z.map(r=>r.aktien_index),color:s1},{name:'10-Monats-Durchschnitt',values:z.map(r=>r.aktien_sma),color:s2,dash:true}],{fmt:idxFmt,h:200,aria:'Aktienteil und gleitender Durchschnitt'});
+  const zq=D.meta.zielquote_aktien, b=D.meta.toleranzband_pp/100;
+  document.getElementById('quotelead').textContent=`Ziel ${pct(zq,0)}, Toleranzband ${pct(zq-b,0)} bis ${pct(zq+b,0)} (blau hinterlegt). Aktuell ${pct(D.aktienquote)}.`;
+  lineChart('c-quote',L,[{name:'Aktienquote',values:z.map(r=>r.aktienquote),color:s1}],{band:[zq-b,zq+b],min:0.70,max:0.90,ref:zq,fmt:(t,tip)=>pct(t,tip?1:0),h:180,aria:'Aktienquote im Zeitverlauf mit Toleranzband'});
+
+  barH('c-alloc',D.allokation.map(a=>({label:a.region,href:'fonds-'+a.id.toLowerCase(),values:[{name:'Ist',v:a.ist,color:s1},{name:'Soll',v:a.soll,color:s2}]})),{fmt:(t,tip)=>pct(t,tip?1:0),labels:true,aria:'Soll- und Ist-Gewichte je Position'});
+  table('alloctable',['Position','Soll','Ist','Abweichung','Anteil am Risiko','Wert','Bedarf bis Soll','Status'],D.allokation.map(a=>[`<a class="pos" href="#fonds-${a.id.toLowerCase()}">${a.name}</a><br><span style="color:var(--text-muted);font-size:11px">${a.klasse} · ${a.kennung}</span>`,pct(a.soll),pct(a.ist),(a.abweichung_pp>0?'+':'')+a.abweichung_pp.toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1}).replace('-','−')+' Pp.',pct(D.einzel.positionen[a.id].risikobeitrag),eur(a.wert),(a.handlungsbedarf_eur>0?'+':'')+eur(a.handlungsbedarf_eur),statusHtml(a.status)]));
+
+  barH('c-stress',D.stresstests.map(s=>({label:s.name,values:[{name:'Verlust',v:s.pct,color:s1}]})),{fmt:(t,tip)=>pct(t,tip?1:0),labels:true,bh:14,l:10,negInside:true,stacked:true,aria:'Stresstests'});
+  table('stresstable',['Szenario','Anteil','Betrag'],D.stresstests.map(s=>[s.name,pct(s.pct),eur(s.eur)]));
+  document.getElementById('rebalead').textContent=`Regel: ${D.meta.rebalancing}.`;
+  table('rebatable',['Monat','Anlass','Quote vorher','Volumen'],D.rebalancing.slice().reverse().map(e=>[monat(e.datum),e.grund,pct(e.aktienquote_vorher),eur(e.volumen)]));
+
+  document.getElementById('disclaimer').innerHTML=(D.meta.testdaten?'<b>Testdaten:</b> Die Kurse auf dieser Seite sind simuliert und bilden keine echte Marktentwicklung ab. ':'')+'Das Musterdepot ist fiktiv und dient ausschließlich der Darstellung von Reporting- und Risikomethoden. Es ist keine Anlageberatung und keine Empfehlung zum Kauf oder Verkauf von Wertpapieren. Alle Fonds sind frei erfunden und nicht handelbar.';
+}
+function renderDetail(id){
+  const D=DATA, A=D.allokation, a=A.find(x=>x.id===id), P=D.einzel.positionen[id], z=P.zeitreihe, L=z.map(r=>r.datum);
+  const s1=css('--series-1'), s2=css('--series-2'), host=document.getElementById('detail');
+  const i=A.indexOf(a), prev=A[(i-1+A.length)%A.length], next=A[(i+1)%A.length];
+  const tol=0.20, risk=P.risikobeitrag;
+  const stress=D.stresstests.map(s=>{ const cfg=s.name; const ak=a.klasse==='Aktien'; let v=0;
+    if(/Aktien −20/.test(cfg)) v+= ak? -0.2*a.wert : 0;
+    if(/Zinsen \+1/.test(cfg)) v+= ak? 0 : -a.wert*(a.duration||0)*0.01;
+    return [s.name, eur(v), pct(v/a.wert), pct(s.eur? v/s.eur:0)]; });
+  host.innerHTML=`
+    <div class="detail-head">
+      <div><a class="back" href="#">← Übersicht</a><h2>${a.name}</h2>
+        <div class="meta">${a.klasse} · ${a.region} · ${a.kennung} · laufende Kosten ${pct(a.ter,2)} p. a.${a.duration!=null?' · Duration '+a.duration.toLocaleString('de-DE')+' Jahre':''}</div></div>
+      <div class="navbtns"><a class="btn" href="#fonds-${prev.id.toLowerCase()}">← ${prev.region}</a><a class="btn" href="#fonds-${next.id.toLowerCase()}">${next.region} →</a></div>
+    </div>
+    <div class="grid tiles">
+      ${[['Positionswert',eur(a.wert),statusHtml(a.status)],['Gewicht Ist / Soll',pct(a.ist)+' / '+pct(a.soll),(a.abweichung_pp>0?'+':'')+a.abweichung_pp.toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1}).replace('-','−')+' Pp.'],
+         ['Rendite p. a.',pct(P.rendite_pa,1,true),pct(P.rendite_gesamt,1,true)+' seit Start'],['Volatilität p. a.',pct(P.volatilitaet_pa),'Depot '+pct(D.kennzahlen.volatilitaet_pa)],
+         ['Max. Drawdown',pct(P.max_drawdown),monat(P.max_drawdown_datum)],['Anteil am Depotrisiko',pct(risk),'bei '+pct(a.ist)+' Gewicht']]
+        .map(t=>`<div class="card tile"><div class="label">${t[0]}</div><div class="value">${t[1]}</div><div class="sub">${t[2]}</div></div>`).join('')}
+    </div>
+    <section class="card"><h2>Fondsentwicklung im Vergleich zum Depot</h2>
+      <p class="lead">Beide indexiert (Start = 100), nach laufenden Kosten.</p>
+      <div class="legend"><span style="--c:${s1}">${a.region}</span><span class="dash" style="--c:${s2}">Depot gesamt</span></div>
+      <div class="chart" id="d-index"></div></section>
+    <div class="grid two">
+      <section class="card"><h2>Gewicht und Soll</h2>
+        <p class="lead">Soll ${pct(a.soll)}, Toleranz ±${pct(tol,0)} relativ (blau hinterlegt). Sprünge zeigen Umschichtungen.</p>
+        <div class="chart" id="d-gewicht"></div></section>
+      <section class="card"><h2>Drawdown des Fonds</h2>
+        <p class="lead">Abstand zum eigenen Höchststand.</p>
+        <div class="chart" id="d-dd"></div></section>
+    </div>
+    <div class="grid two">
+      <section class="card"><h2>Kennzahlen</h2>
+        <div class="kv">
+          <div>Beitrag zur Depotrendite seit Start</div><div>${P.renditebeitrag_pp.toLocaleString('de-DE',{minimumFractionDigits:2}).replace('-','−')} Pp. von ${D.einzel.depot_renditen_summe_pp.toLocaleString('de-DE',{minimumFractionDigits:2})} Pp.</div>
+          <div>Anteil am Depotrisiko (Varianz)</div><div>${pct(risk)}</div>
+          <div>Beta zum Depot (36 Monate)</div><div>${P.beta_depot.toLocaleString('de-DE',{minimumFractionDigits:2})}</div>
+          <div>Korrelation zum Depot (36 Monate)</div><div>${P.korrelation_depot.toLocaleString('de-DE',{minimumFractionDigits:2})}</div>
+          <div>Bester Monat</div><div>${pct(P.bester_monat[1],Math.abs(P.bester_monat[1])<0.01?2:1,true)} (${monat(P.bester_monat[0])})</div>
+          <div>Schlechtester Monat</div><div>${pct(P.schlechtester_monat[1],Math.abs(P.schlechtester_monat[1])<0.01?2:1,true)} (${monat(P.schlechtester_monat[0])})</div>
+          <div>Bedarf bis Soll</div><div>${(a.handlungsbedarf_eur>0?'+':'')+eur(a.handlungsbedarf_eur)}</div>
+        </div>
+        <p class="hint">Renditebeitrag: Summe der monatlichen Beiträge (Wertänderung der Position geteilt durch den Depotwert des Vormonats). Risikoanteil: Gewicht mal Kovarianz mit dem Depot, geteilt durch die Depotvarianz.</p>
+      </section>
+      <section class="card"><h2>Stresstests für diese Position</h2>
+        <div class="tblwrap"><table id="d-stress"></table></div>
+        <h2 style="margin-top:16px">Umschichtungen</h2>
+        <div class="tblwrap"><table id="d-trades"></table></div>
+      </section>
+    </div>`;
+  const depot=DATA.zeitreihe.map(r=>r.index);
+  const idxFmt=(t,tip)=>tip?t.toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1}):t;
+  lineChart('d-index',L,[{name:a.region,values:z.map(r=>r.index),color:s1},{name:'Depot',values:depot,color:s2,dash:true}],{fmt:idxFmt,ref:100,aria:'Fondsentwicklung im Vergleich zum Depot'});
+  const lo=a.soll*(1-tol), hi=a.soll*(1+tol), g=z.map(r=>r.gewicht);
+  lineChart('d-gewicht',L,[{name:'Gewicht',values:g,color:s1}],{band:[lo,hi],ref:a.soll,extra:[lo,hi],fmt:(t,tip)=>pct(t,tip?2:1),h:200,aria:'Gewicht im Zeitverlauf'});
+  lineChart('d-dd',L,[{name:'Drawdown',values:z.map(r=>r.drawdown),color:s1,area:true}],{max:0,ref:0,fmt:t=>pct(t,0),h:200,aria:'Drawdown des Fonds'});
+  table('d-stress',['Szenario','Effekt','auf Position','Anteil am Depoteffekt'],stress);
+  table('d-trades',['Monat','Anlass','Kauf / Verkauf'],P.umschichtungen.slice().reverse().map(u=>[monat(u.datum),u.grund,(u.betrag>0?'Kauf +':'Verkauf ')+eur(u.betrag)]));
+}
+
+function route(){
+  const m=location.hash.match(/^#fonds-([a-z]+)$/), id=m && DATA.allokation.find(a=>a.id.toLowerCase()===m[1]);
+  const det=document.getElementById('detail'), ueb=document.getElementById('uebersicht');
+  hideTip();
+  if(id){ ueb.style.display='none'; det.style.display='block'; renderDetail(id.id); document.title=id.name+' · Musterdepot-Monitoring'; window.scrollTo(0,0); }
+  else { det.style.display='none'; ueb.style.display='block'; render(); document.title='Musterdepot-Monitoring · Christoph Zapp'; }
+}
+render();
+route();
+addEventListener('hashchange',route);
+let rz; addEventListener('resize',()=>{clearTimeout(rz); rz=setTimeout(route,150);});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',route);
+</script>
+</body>
+</html>
