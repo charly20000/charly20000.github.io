@@ -318,7 +318,7 @@ function barH(id, groups, o={}){
       const p=neg?`M${x1+w},${yy}H${x1+rx}Q${x1},${yy} ${x1},${yy+rx}V${yy+bh-rx}Q${x1},${yy+bh} ${x1+rx},${yy+bh}H${x1+w}Z`
                  :`M${x1},${yy}H${x1+w-rx}Q${x1+w},${yy} ${x1+w},${yy+rx}V${yy+bh-rx}Q${x1+w},${yy+bh} ${x1+w-rx},${yy+bh}H${x1}Z`;
       const bar=el('path',{d:p,fill:v.color}); svg.appendChild(bar);
-      if(o.labels && k===0){ const lx=neg?(o.negInside?x(0)+6:x1-4):x1+w+4; svg.appendChild(el('text',{x:lx,y:yy+bh-1,'text-anchor':neg&&!o.negInside?'end':'start'},o.fmt(v.v,true))); }
+      if(o.labels && (k===0 || o.labelsAll)){ const lx=neg?(o.negInside?x(0)+6:x1-4):x1+w+4; const t=el('text',{x:lx,y:yy+bh-1,'text-anchor':neg&&!o.negInside?'end':'start'},o.fmt(v.v,true)); if(k>0){ t.setAttribute('style','font-size:9px;fill:var(--text-muted)'); } svg.appendChild(t); }
       const hit=el('rect',{x:m.l,y:yy-1,width:W-m.l-m.r,height:bh+2,fill:'transparent'});
       hit.addEventListener('mousemove',ev=>showTip(`<b>${g.label}</b>`+g.values.map(q=>`<div><i style="background:${q.color}"></i>${q.name}: ${o.fmt(q.v,true)}</div>`).join('')+(g.href?'<div style="color:var(--text-muted);margin-top:3px">Klicken für Einzelanalyse</div>':''),ev));
       hit.addEventListener('mouseleave',hideTip);
@@ -354,7 +354,7 @@ function render(){
   document.getElementById('quotelead').textContent=`Ziel ${pct(zq,0)}, Toleranzband ${pct(zq-b,0)} bis ${pct(zq+b,0)} (blau hinterlegt). Aktuell ${pct(D.aktienquote)}.`;
   lineChart('c-quote',L,[{name:'Aktienquote',values:z.map(r=>r.aktienquote),color:s1}],{band:[zq-b,zq+b],min:0.70,max:0.90,ref:zq,fmt:(t,tip)=>pct(t,tip?1:0),h:180,aria:'Aktienquote im Zeitverlauf mit Toleranzband'});
 
-  barH('c-alloc',D.allokation.map(a=>({label:a.region,href:'fonds-'+a.id.toLowerCase(),values:[{name:'Ist',v:a.ist,color:s1},{name:'Soll',v:a.soll,color:s2}]})),{fmt:(t,tip)=>pct(t,tip?1:0),labels:true,aria:'Soll- und Ist-Gewichte je Position'});
+  barH('c-alloc',D.allokation.map(a=>({label:a.region,href:'fonds-'+a.id.toLowerCase(),values:[{name:'Ist',v:a.ist,color:s1},{name:'Soll',v:a.soll,color:s2}]})),{fmt:(t,tip)=>pct(t,tip?1:0),labels:true,labelsAll:true,bh:10,aria:'Soll- und Ist-Gewichte je Position'});
   table('alloctable',['Position','Soll','Ist','Abweichung','Anteil am Risiko','Wert','Bedarf bis Soll','Status'],D.allokation.map(a=>[`<a class="pos" href="#fonds-${a.id.toLowerCase()}">${a.name}</a><br><span style="color:var(--text-muted);font-size:11px">${a.klasse} · ${a.kennung}</span>`,pct(a.soll),pct(a.ist),(a.abweichung_pp>0?'+':'')+a.abweichung_pp.toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1}).replace('-','−')+' Pp.',pct(D.einzel.positionen[a.id].risikobeitrag),eur(a.wert),(a.handlungsbedarf_eur>0?'+':'')+eur(a.handlungsbedarf_eur),statusHtml(a.status)]));
 
   barH('c-stress',D.stresstests.map(s=>({label:s.name,values:[{name:'Verlust',v:s.pct,color:s1}]})),{fmt:(t,tip)=>pct(t,tip?1:0),labels:true,bh:14,l:10,negInside:true,stacked:true,aria:'Stresstests'});
