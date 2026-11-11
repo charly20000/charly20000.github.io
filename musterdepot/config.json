@@ -1,0 +1,118 @@
+{
+  "name": "Musterdepot 80/20",
+  "startkapital": 1000000,
+  "startdatum": "2021-11-30",
+  "risikofreier_zins_pa": 0.02,
+  "zielquote_aktien": 0.8,
+  "toleranzband_aktien_pp": 5.0,
+  "toleranz_position_relativ": 0.2,
+  "rebalancing": "bei Verletzung des Toleranzbands und jährlich im Januar",
+  "warnregeln": {
+    "drawdown_schwelle": 0.1,
+    "trend_monate": 10,
+    "var_konfidenz": 0.95
+  },
+  "stresstests": [
+    {
+      "name": "Aktien −20 %",
+      "aktien": -0.2,
+      "zins_pp": 0.0
+    },
+    {
+      "name": "Zinsen +1 Prozentpunkt",
+      "aktien": 0.0,
+      "zins_pp": 1.0
+    },
+    {
+      "name": "Kombiniert: Aktien −20 %, Zinsen +1 Pp.",
+      "aktien": -0.2,
+      "zins_pp": 1.0
+    }
+  ],
+  "positionen": [
+    {
+      "id": "NA",
+      "name": "Musterfonds Aktien Nordamerika",
+      "klasse": "Aktien",
+      "region": "Nordamerika",
+      "soll": 0.42,
+      "ter": 0.001,
+      "kennung": "MF-AK-NA"
+    },
+    {
+      "id": "EU",
+      "name": "Musterfonds Aktien Europa",
+      "klasse": "Aktien",
+      "region": "Europa",
+      "soll": 0.144,
+      "ter": 0.001,
+      "kennung": "MF-AK-EU"
+    },
+    {
+      "id": "JP",
+      "name": "Musterfonds Aktien Japan",
+      "klasse": "Aktien",
+      "region": "Japan",
+      "soll": 0.066,
+      "ter": 0.0015,
+      "kennung": "MF-AK-JP"
+    },
+    {
+      "id": "APX",
+      "name": "Musterfonds Aktien Pazifik ohne Japan",
+      "klasse": "Aktien",
+      "region": "Asien-Pazifik ohne Japan",
+      "soll": 0.022,
+      "ter": 0.0015,
+      "kennung": "MF-AK-PX"
+    },
+    {
+      "id": "EM",
+      "name": "Musterfonds Aktien Schwellenländer",
+      "klasse": "Aktien",
+      "region": "Schwellenländer",
+      "soll": 0.084,
+      "ter": 0.0022,
+      "kennung": "MF-AK-EM"
+    },
+    {
+      "id": "SC",
+      "name": "Musterfonds Nebenwerte Welt",
+      "klasse": "Aktien",
+      "region": "Small Caps weltweit",
+      "soll": 0.064,
+      "ter": 0.0035,
+      "kennung": "MF-AK-SC"
+    },
+    {
+      "id": "GOV",
+      "name": "Musterfonds Euro-Staatsanleihen kurz",
+      "klasse": "Anleihen",
+      "region": "Staatsanleihen kurz",
+      "soll": 0.05,
+      "ter": 0.0005,
+      "duration": 0.5,
+      "kennung": "MF-RE-GK"
+    },
+    {
+      "id": "AGG",
+      "name": "Musterfonds Renten Global gemischt",
+      "klasse": "Anleihen",
+      "region": "Anleihen gemischt",
+      "soll": 0.075,
+      "ter": 0.0035,
+      "duration": 4.0,
+      "kennung": "MF-RE-GM"
+    },
+    {
+      "id": "CORP",
+      "name": "Musterfonds Euro-Unternehmensanleihen",
+      "klasse": "Anleihen",
+      "region": "Unternehmensanleihen",
+      "soll": 0.075,
+      "ter": 0.0009,
+      "duration": 4.5,
+      "kennung": "MF-RE-UA"
+    }
+  ]
+}
