@@ -94,6 +94,17 @@ a.pos:hover{color:var(--accent);border-bottom-color:var(--accent)}
 .kv div:nth-child(odd){color:var(--text-secondary)}
 .kv div:nth-child(even){text-align:right;font-variant-numeric:tabular-nums}
 .chart .clickable{cursor:pointer}
+.calc-in{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 14px}
+.calc-in input[type=number]{font:inherit;font-size:15px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;width:170px;background:var(--surface-1);color:var(--text-primary)}
+.calc-in .seg{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.calc-in .seg button{font:inherit;font-size:13px;padding:7px 12px;border:0;background:var(--surface-1);color:var(--text-secondary);cursor:pointer}
+.calc-in .seg button[aria-pressed=true]{background:var(--accent);color:#fff}
+.chip{font:inherit;font-size:12px;padding:5px 10px;border:1px solid var(--border);border-radius:14px;background:var(--surface-1);color:var(--text-secondary);cursor:pointer}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.summary{display:flex;gap:22px;flex-wrap:wrap;font-size:13px;color:var(--text-secondary);margin:10px 0 4px}
+.summary b{color:var(--text-primary);font-variant-numeric:tabular-nums}
+td.buy{color:var(--good)} td.sell{color:var(--critical)}
+tr.sum td{font-weight:bold;border-top:2px solid var(--border)}
 @media (max-width:520px){.two{grid-template-columns:1fr}.tile .value{font-size:20px}}
 </style>
 </head>
@@ -104,7 +115,7 @@ a.pos:hover{color:var(--accent);border-bottom-color:var(--accent)}
   <header class="top">
     <div>
       <h1>Musterdepot-<b>Monitoring</b></h1>
-      <p>Monatliches Kapitalanlagereporting und Risikoüberwachung für ein fiktives Depot mit 1 Mio. € Startkapital</p>
+      <p>Monatliches Kapitalanlagereporting und Risikoüberwachung für das fiktive Depot eines Privatanlegers mit 1 Mio. € Startkapital</p>
     </div>
     <div class="stand" id="stand"></div>
   </header>
@@ -116,7 +127,7 @@ a.pos:hover{color:var(--accent);border-bottom-color:var(--accent)}
   <div class="grid two">
     <div class="card">
       <h2>Warnregeln</h2>
-      <p class="lead">Wöchentlich geprüft. Greift eine Regel, geht automatisch eine E-Mail raus.</p>
+      <p class="lead">Werden jede Woche automatisch geprüft. Der Status zeigt das Ergebnis des letzten Laufs.</p>
       <ul class="alerts" id="alerts"></ul>
     </div>
     <div class="card">
@@ -159,6 +170,39 @@ a.pos:hover{color:var(--accent);border-bottom-color:var(--accent)}
     <p class="hint">Auf einen Balken oder Fondsnamen klicken, um die Einzelanalyse zu öffnen.</p>
     <div class="tblwrap"><table id="alloctable" style="margin-top:12px"></table></div>
   </section>
+
+  <section class="card" id="rechner">
+    <h2>Rebalancing-Rechner</h2>
+    <p class="lead">Wie wirkt sich eine Einzahlung oder Entnahme aus? Erst wird der Betrag auf Aktien und Anleihen verteilt, dann auf die einzelnen Fonds.</p>
+    <div class="calc-in">
+      <label for="gf">Geldfluss in €</label>
+      <input id="gf" type="number" step="1000" value="50000" aria-describedby="gfhint">
+      <button class="chip" data-v="50000">+50.000</button><button class="chip" data-v="-31000">−31.000</button><button class="chip" data-v="0">nur umschichten</button>
+      <span class="seg" role="group" aria-label="Vorgehen">
+        <button id="m-voll" aria-pressed="true">Voll auf Soll</button><button id="m-gf" aria-pressed="false">Nur Geldfluss verteilen</button>
+      </span>
+    </div>
+    <p class="hint" id="gfhint">Positiv = Einzahlung, negativ = Entnahme. „Voll auf Soll“ bringt jede Position auf ihr Zielgewicht, auch mit Gegenverkäufen. „Nur Geldfluss verteilen“ investiert in untergewichtete Fonds bzw. entnimmt aus übergewichteten, ohne zusätzliche Umschichtung.</p>
+    <div class="summary" id="calcsum"></div>
+    <div class="tblwrap"><table id="calc1" style="margin-bottom:14px"></table></div>
+    <div class="tblwrap"><table id="calc2"></table></div>
+  </section>
+
+  <div class="grid two">
+    <section class="card">
+      <h2>Herleitung der Zielgewichte</h2>
+      <p class="lead" id="sollead"></p>
+      <div class="tblwrap"><table id="solltable"></table></div>
+      <p class="hint">Die Referenzanteile decken nicht 100 % ab, sie werden deshalb auf den Aktienteil normiert. Die festgelegten Gewichte weichen bewusst vom Mittel ab: Europa ist höher gewichtet, Schwellenländer, Small Caps und Asien-Pazifik ohne Japan sind niedriger gewichtet.</p>
+    </section>
+    <section class="card">
+      <h2>Kosten und Ausschüttungen</h2>
+      <p class="lead">Laufende Kosten der Fonds und erwartete Ausschüttungen auf Basis des aktuellen Bestands, pro Jahr.</p>
+      <div class="grid tiles" id="kosttiles" style="grid-template-columns:repeat(2,1fr);margin-bottom:10px"></div>
+      <div class="tblwrap"><table id="kosttable"></table></div>
+      <p class="hint" id="kosthint"></p>
+    </section>
+  </div>
 
   <div class="grid two">
     <section class="card">
@@ -318,6 +362,7 @@ function render(){
   document.getElementById('rebalead').textContent=`Regel: ${D.meta.rebalancing}.`;
   table('rebatable',['Monat','Anlass','Quote vorher','Volumen'],D.rebalancing.slice().reverse().map(e=>[monat(e.datum),e.grund,pct(e.aktienquote_vorher),eur(e.volumen)]));
 
+  renderRechner(); renderSollKosten();
   document.getElementById('disclaimer').innerHTML=(D.meta.testdaten?'<b>Testdaten:</b> Die Kurse auf dieser Seite sind simuliert und bilden keine echte Marktentwicklung ab. ':'')+'Das Musterdepot ist fiktiv und dient ausschließlich der Darstellung von Reporting- und Risikomethoden. Es ist keine Anlageberatung und keine Empfehlung zum Kauf oder Verkauf von Wertpapieren. Alle Fonds sind frei erfunden und nicht handelbar.';
 }
 function renderDetail(id){
@@ -362,6 +407,8 @@ function renderDetail(id){
           <div>Korrelation zum Depot (36 Monate)</div><div>${P.korrelation_depot.toLocaleString('de-DE',{minimumFractionDigits:2})}</div>
           <div>Bester Monat</div><div>${pct(P.bester_monat[1],Math.abs(P.bester_monat[1])<0.01?2:1,true)} (${monat(P.bester_monat[0])})</div>
           <div>Schlechtester Monat</div><div>${pct(P.schlechtester_monat[1],Math.abs(P.schlechtester_monat[1])<0.01?2:1,true)} (${monat(P.schlechtester_monat[0])})</div>
+          <div>Laufende Kosten p. a.</div><div>${pct(a.ter,2)} = ${eur(a.kosten_eur)}</div>
+          <div>Erwartete Ausschüttung p. a.</div><div>${pct(a.ausschuettung,2)} = ${eur(a.ausschuettung_eur)}</div>
           <div>Bedarf bis Soll</div><div>${(a.handlungsbedarf_eur>0?'+':'')+eur(a.handlungsbedarf_eur)}</div>
         </div>
         <p class="hint">Renditebeitrag: Summe der monatlichen Beiträge (Wertänderung der Position geteilt durch den Depotwert des Vormonats). Risikoanteil: Gewicht mal Kovarianz mit dem Depot, geteilt durch die Depotvarianz.</p>
@@ -382,6 +429,53 @@ function renderDetail(id){
   table('d-trades',['Monat','Anlass','Kauf / Verkauf'],P.umschichtungen.slice().reverse().map(u=>[monat(u.datum),u.grund,(u.betrag>0?'Kauf +':'Verkauf ')+eur(u.betrag)]));
 }
 
+function umschichten(werte, soll, gf, modus){
+  const ges=werte.reduce((a,b)=>a+b,0)+gf, ziel=soll.map(x=>ges*x);
+  if(modus==='voll') return ziel.map((z,i)=>z-werte[i]);
+  if(gf>=0){ const l=ziel.map((z,i)=>Math.max(0,z-werte[i])), S=l.reduce((a,b)=>a+b,0);
+    if(S===0) return soll.map(x=>gf*x);
+    return gf<=S ? l.map(x=>gf*x/S) : l.map((x,i)=>x+(gf-S)*soll[i]); }
+  const u=ziel.map((z,i)=>Math.max(0,werte[i]-z)), S=u.reduce((a,b)=>a+b,0);
+  if(S===0) return soll.map(x=>gf*x);
+  return -gf<=S ? u.map(x=>gf*x/S) : u.map((x,i)=>-x+(gf+S)*soll[i]);
+}
+window.umschichten=umschichten;
+let rmodus='voll';
+function renderRechner(){
+  const A=DATA.allokation, gf=parseFloat(document.getElementById('gf').value)||0;
+  const w=A.map(a=>a.wert), so=A.map(a=>a.soll), t=umschichten(w,so,gf,rmodus);
+  const nach=w.map((x,i)=>x+t[i]), ges=nach.reduce((a,b)=>a+b,0), vor=w.reduce((a,b)=>a+b,0);
+  const ka=k=>A.map((a,i)=>a.klasse===k?i:-1).filter(i=>i>=0), sum=(arr,ix)=>ix.reduce((a,i)=>a+arr[i],0);
+  const zq=DATA.meta.zielquote_aktien;
+  const cls=v=>Math.abs(v)<0.5?'':(v>0?'buy':'sell'), sgn=v=>Math.abs(v)<0.5?'–':(v>0?'+':'')+eur(v);
+  const rows1=['Aktien','Anleihen'].map(k=>{ const ix=ka(k), iv=sum(w,ix), nv=sum(nach,ix), zl=k==='Aktien'?zq:1-zq;
+    return [k, eur(iv), pct(iv/vor), pct(zl,0), eur((vor+gf)*zl), `<span class="${cls(nv-iv)}">${sgn(nv-iv)}</span>`, pct(nv/ges)]; });
+  rows1.push(['Gesamt',eur(vor),pct(1,0),pct(1,0),eur(vor+gf),sgn(gf),pct(1,0)]);
+  table('calc1',['Ebene 1: Anlageklasse','Wert heute','Anteil','Ziel','Zielwert','Änderung','Anteil danach'],rows1);
+  document.querySelector('#calc1 tbody tr:last-child').className='sum';
+  table('calc2',['Ebene 2: Fonds','Wert heute','Gewicht','Soll','Kauf / Verkauf','Wert danach','Gewicht danach'],A.map((a,i)=>[`<a class="pos" href="#fonds-${a.id.toLowerCase()}">${a.name}</a>`,eur(w[i]),pct(w[i]/vor),pct(a.soll),`<span class="${cls(t[i])}">${sgn(t[i])}</span>`,eur(nach[i]),pct(nach[i]/ges)]));
+  const n=t.filter(x=>Math.abs(x)>=0.5).length, umsatz=t.reduce((a,b)=>a+Math.abs(b),0);
+  const maxAbw=Math.max(...A.map((a,i)=>Math.abs(nach[i]/ges-a.soll)));
+  document.getElementById('calcsum').innerHTML=`<span>Transaktionen <b>${n}</b></span><span>Handelsvolumen <b>${eur(umsatz)}</b></span><span>Aktienquote danach <b>${pct(sum(nach,ka('Aktien'))/ges)}</b></span><span>größte Abweichung vom Soll danach <b>${(maxAbw*100).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})} Pp.</b></span>`;
+}
+function setupRechner(){
+  const inp=document.getElementById('gf');
+  inp.addEventListener('input',renderRechner);
+  document.querySelectorAll('#rechner .chip').forEach(b=>b.addEventListener('click',()=>{inp.value=b.dataset.v; renderRechner();}));
+  const mv=document.getElementById('m-voll'), mg=document.getElementById('m-gf');
+  const set=m=>{rmodus=m; mv.setAttribute('aria-pressed',m==='voll'); mg.setAttribute('aria-pressed',m!=='voll'); renderRechner();};
+  mv.addEventListener('click',()=>set('voll')); mg.addEventListener('click',()=>set('geldfluss'));
+}
+function renderSollKosten(){
+  const H=DATA.soll_herleitung, A=DATA.allokation;
+  document.getElementById('sollead').textContent=`Aktienteil je Region als Mittel aus ${H.quellen.join(' und ')} (Stand ${H.stand}), danach mal ${pct(DATA.meta.zielquote_aktien,0)} Aktienquote.`;
+  table('solltable',['Region','Norweg. Staatsfonds','Portfolio One','Mittel normiert','Festgelegt (Aktienteil)','Soll im Gesamtdepot'],H.zeilen.map(z=>[`<a class="pos" href="#fonds-${z.id.toLowerCase()}">${z.region}</a>`,pct(z.norwegen),pct(z.portfolio_one),pct(z.mittel_normiert),pct(z.soll_aktienteil),pct(z.soll_gesamt)]));
+  const kost=A.reduce((a,x)=>a+x.kosten_eur,0), aus=A.reduce((a,x)=>a+x.ausschuettung_eur,0), wert=A.reduce((a,x)=>a+x.wert,0);
+  document.getElementById('kosttiles').innerHTML=[['Laufende Kosten p. a.',eur(kost),pct(kost/wert,2)+' des Depots'],['Ausschüttungen p. a.',eur(aus),pct(aus/wert,2)+' des Depots']].map(t=>`<div class="card tile"><div class="label">${t[0]}</div><div class="value">${t[1]}</div><div class="sub">${t[2]}</div></div>`).join('');
+  table('kosttable',['Fonds','Kosten p. a.','Kosten €','Ausschüttung','Ausschüttung €'],A.map(a=>[`<a class="pos" href="#fonds-${a.id.toLowerCase()}">${a.region}</a>`,pct(a.ter,2),eur(a.kosten_eur),pct(a.ausschuettung,2),eur(a.ausschuettung_eur)]));
+  document.getElementById('kosthint').textContent=(DATA.annahmen&&DATA.annahmen.ausschuettung)||'';
+}
+
 function route(){
   const m=location.hash.match(/^#fonds-([a-z]+)$/), id=m && DATA.allokation.find(a=>a.id.toLowerCase()===m[1]);
   const det=document.getElementById('detail'), ueb=document.getElementById('uebersicht');
@@ -389,6 +483,7 @@ function route(){
   if(id){ ueb.style.display='none'; det.style.display='block'; renderDetail(id.id); document.title=id.name+' · Musterdepot-Monitoring'; window.scrollTo(0,0); }
   else { det.style.display='none'; ueb.style.display='block'; render(); document.title='Musterdepot-Monitoring · Christoph Zapp'; }
 }
+setupRechner();
 render();
 route();
 addEventListener('hashchange',route);

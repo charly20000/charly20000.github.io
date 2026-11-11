@@ -92,7 +92,7 @@ def bauen(quelle: str, out: Path):
 
     wb = Workbook()
     wb.remove(wb.active)
-    order = ["Info", "Übersicht", "Allokation", "Einzelanalyse", "Warnungen", "Stresstests",
+    order = ["Info", "Übersicht", "Allokation", "Rebalancing-Rechner", "Soll-Herleitung", "Einzelanalyse", "Warnungen", "Stresstests",
              "Depot", "Renditen", "Kovarianz", "Kurse", "Parameter"]
     S = {name: wb.create_sheet(name) for name in order}
     for ws in S.values():
@@ -120,12 +120,15 @@ def bauen(quelle: str, out: Path):
     put(ws, "C11", "Annahme, marktüblich", f_note)
     PR0 = 15
     head(ws, PR0 - 1, ["ID", "Fonds (erfunden)", "Kennung", "Klasse", "Region", "Soll-Gewicht",
-                       "Laufende Kosten p. a.", "Duration (Jahre)"])
+                       "Laufende Kosten p. a.", "Duration (Jahre)", "Ausschüttung p. a. (Annahme)",
+                       "Norweg. Staatsfonds", "Portfolio One"])
     for i, p in enumerate(P):
         r = PR0 + i
         for j, (v, fmt) in enumerate([(p["id"], None), (p["name"], None), (p["kennung"], None), (p["klasse"], None),
                                       (p["region"], None), (p["soll"], PCT), (p["ter"], PCT2),
-                                      (p.get("duration", 0), "0.0")]):
+                                      (p.get("duration", 0), "0.0"), (p.get("ausschuettung", 0), PCT2),
+                                      (p.get("referenz", {}).get("norwegen", 0) / 100, PCT),
+                                      (p.get("referenz", {}).get("portfolio_one", 0) / 100, PCT)]):
             put(ws, f"{CL(j + 1)}{r}", v, f_in, fmt)
     PRL = PR0 + n - 1
     put(ws, f"E{PRL + 1}", "Summe", bold=True)
@@ -140,9 +143,10 @@ def bauen(quelle: str, out: Path):
         put(ws, f"A{r}", s["name"], f_in)
         put(ws, f"B{r}", s["aktien"], f_in, PCT)
         put(ws, f"C{r}", s["zins_pp"], f_in, "0.0")
+    put(ws, f"I{PRL + 1}", f"Referenzwerte Stand {cfg.get('referenz_stand', '')}", f_note)
     ws.column_dimensions["A"].width = 40
     ws.column_dimensions["B"].width = 38
-    for c in "CDEFGH":
+    for c in "CDEFGHIJK":
         ws.column_dimensions[c].width = 16
 
     def prow(i, col):  # Verweis auf Parametertabelle
@@ -247,7 +251,7 @@ def bauen(quelle: str, out: Path):
     put(ws, "A2", f"=\"Stand: \"&TEXT(Depot!A{RL},\"MMMM YYYY\")", f_note)
     AR0 = 5
     head(ws, 4, ["ID", "Fonds", "Klasse", "Region", "Soll", "Ist", "Abweichung (Pp.)", "Abweichung relativ",
-                 "Status", "Wert", "Bedarf bis Soll", "Anteil am Depotrisiko"])
+                 "Status", "Wert", "Bedarf bis Soll", "Anteil am Depotrisiko", "Kosten p. a. (€)", "Ausschüttung p. a. (€)"])
     for i in range(n):
         r = AR0 + i
         put(ws, f"A{r}", f"={prow(i, 'A')}", f_link)
@@ -262,9 +266,11 @@ def bauen(quelle: str, out: Path):
         put(ws, f"I{r}", f'=IF(ABS(H{r})<=Toleranz/2,"im Rahmen",IF(ABS(H{r})<=Toleranz,"beobachten","handeln"))')
         put(ws, f"K{r}", f"=E{r}*Depot!$K${RL}-J{r}", fmt=EUR)
         put(ws, f"L{r}", f"=Kovarianz!N{4 + i}", f_link, PCT)
+        put(ws, f"M{r}", f"=J{r}*{prow(i, 'G')}", fmt=EUR)
+        put(ws, f"N{r}", f"=J{r}*{prow(i, 'I')}", fmt=EUR)
     AL = AR0 + n - 1
     put(ws, f"D{AL + 1}", "Summe", bold=True)
-    for c, fmt in (("E", PCT), ("F", PCT), ("J", EUR), ("K", EUR), ("L", PCT)):
+    for c, fmt in (("E", PCT), ("F", PCT), ("J", EUR), ("K", EUR), ("L", PCT), ("M", EUR), ("N", EUR)):
         put(ws, f"{c}{AL + 1}", f"=SUM({c}{AR0}:{c}{AL})", fmt=fmt, bold=True)
     put(ws, f"D{AL + 2}", "Aktienquote", bold=True)
     put(ws, f"F{AL + 2}", f'=SUMIF(C{AR0}:C{AL},"Aktien",F{AR0}:F{AL})', fmt=PCT, bold=True)
@@ -274,7 +280,7 @@ def bauen(quelle: str, out: Path):
     ws.conditional_formatting.add(rng, CellIsRule(operator="equal", formula=['"im Rahmen"'], fill=PatternFill("solid", fgColor="D9F2D9")))
     ws.conditional_formatting.add(rng, CellIsRule(operator="equal", formula=['"beobachten"'], fill=PatternFill("solid", fgColor="FFF0C2")))
     ws.conditional_formatting.add(rng, CellIsRule(operator="equal", formula=['"handeln"'], fill=PatternFill("solid", fgColor="F8D0D0")))
-    widths = [7, 38, 10, 24, 9, 9, 14, 14, 12, 13, 14, 14]
+    widths = [7, 38, 10, 24, 9, 9, 14, 14, 12, 13, 14, 14, 14, 14]
     for j, w in enumerate(widths):
         ws.column_dimensions[CL(j + 1)].width = w
     ch = BarChart()
@@ -288,6 +294,89 @@ def bauen(quelle: str, out: Path):
         s_.graphicalProperties.solidFill = col
         s_.graphicalProperties.line.solidFill = col
     ws.add_chart(ch, f"B{AL + 6}")
+
+    # ------------------------------------------------------------------ Rebalancing-Rechner
+    ws = S["Rebalancing-Rechner"]
+    title(ws, "Rebalancing-Rechner", "Geldfluss in B4 eintragen (gelb): positiv = Einzahlung, negativ = Entnahme.")
+    put(ws, "A4", "Geldfluss (€)", bold=True)
+    c = put(ws, "B4", 50000, f_in, EUR)
+    c.fill = fill_key
+    wb.defined_names["Geldfluss"] = DefinedName("Geldfluss", attr_text="'Rebalancing-Rechner'!$B$4")
+    put(ws, "C4", "Ebene 1 verteilt auf Aktien/Anleihen, Ebene 2 auf die Fonds. Spalte F: alle Positionen auf Soll. Spalten G–J: nur den Geldfluss verteilen, ohne Gegenbuchungen.", f_note)
+    put(ws, "A6", "Ebene 1: Anlageklasse", bold=True)
+    head(ws, 7, ["Klasse", "Wert heute", "Anteil", "Ziel", "Zielwert", "Änderung", "Anteil danach"])
+    for j, (kl, ziel) in enumerate((("Aktien", "=Zielquote"), ("Anleihen", "=1-Zielquote"))):
+        r = 8 + j
+        put(ws, f"A{r}", kl)
+        put(ws, f"B{r}", f'=SUMIF(Allokation!$C${AR0}:$C${AL},A{r},Allokation!$J${AR0}:$J${AL})', fmt=EUR)
+        put(ws, f"C{r}", f"=B{r}/$B$10", fmt=PCT)
+        put(ws, f"D{r}", ziel, fmt=PCT)
+        put(ws, f"E{r}", f"=($B$10+Geldfluss)*D{r}", fmt=EUR)
+        put(ws, f"F{r}", f"=E{r}-B{r}", fmt=EUR)
+        put(ws, f"G{r}", f"=E{r}/$E$10", fmt=PCT)
+    put(ws, "A10", "Gesamt", bold=True)
+    for c_, f_, fm in (("B", "=SUM(B8:B9)", EUR), ("C", "=SUM(C8:C9)", PCT), ("D", "=SUM(D8:D9)", PCT),
+                        ("E", "=SUM(E8:E9)", EUR), ("F", "=SUM(F8:F9)", EUR), ("G", "=SUM(G8:G9)", PCT)):
+        put(ws, f"{c_}10", f_, fmt=fm, bold=True)
+    put(ws, "A13", "Ebene 2: Fonds", bold=True)
+    head(ws, 14, ["Fonds", "Wert heute", "Soll", "Zielwert", "Gewicht heute", "Voll auf Soll: Kauf / Verkauf",
+                  "Lücke (unter Soll)", "Überhang (über Soll)", "Nur Geldfluss: Kauf / Verkauf", "Gewicht danach (nur Geldfluss)"])
+    RR0 = 15
+    RRL = RR0 + n - 1
+    for i in range(n):
+        r = RR0 + i
+        put(ws, f"A{r}", f"=Allokation!B{AR0 + i}", f_link)
+        put(ws, f"B{r}", f"=Allokation!J{AR0 + i}", f_link, EUR)
+        put(ws, f"C{r}", f"=Allokation!E{AR0 + i}", f_link, PCT)
+        put(ws, f"D{r}", f"=($B${RRL + 1}+Geldfluss)*C{r}", fmt=EUR)
+        put(ws, f"E{r}", f"=B{r}/$B${RRL + 1}", fmt=PCT)
+        put(ws, f"F{r}", f"=D{r}-B{r}", fmt=EUR)
+        put(ws, f"G{r}", f"=MAX(0,D{r}-B{r})", fmt=EUR)
+        put(ws, f"H{r}", f"=MAX(0,B{r}-D{r})", fmt=EUR)
+        lg, ug = f"$G${RRL + 1}", f"$H${RRL + 1}"
+        put(ws, f"I{r}", f"=IF(Geldfluss>=0,IF({lg}=0,Geldfluss*C{r},IF(Geldfluss<={lg},Geldfluss*G{r}/{lg},G{r}+(Geldfluss-{lg})*C{r})),"
+                         f"IF({ug}=0,Geldfluss*C{r},IF(-Geldfluss<={ug},Geldfluss*H{r}/{ug},-H{r}+(Geldfluss+{ug})*C{r})))", fmt=EUR)
+        put(ws, f"J{r}", f"=(B{r}+I{r})/($B${RRL + 1}+Geldfluss)", fmt=PCT)
+    put(ws, f"A{RRL + 1}", "Summe", bold=True)
+    for c_ in "BCDFGHIJ":
+        fm = PCT if c_ in "CJ" else EUR
+        put(ws, f"{c_}{RRL + 1}", f"=SUM({c_}{RR0}:{c_}{RRL})", fmt=fm, bold=True)
+    put(ws, f"E{RRL + 1}", f"=SUM(E{RR0}:E{RRL})", fmt=PCT, bold=True)
+    put(ws, f"A{RRL + 3}", "Kontrolle: Die Summen in F und I müssen dem Geldfluss entsprechen.", f_note)
+    put(ws, f"F{RRL + 3}", f"=IF(AND(ABS(F{RRL + 1}-Geldfluss)<1,ABS(I{RRL + 1}-Geldfluss)<1),\"ok\",\"prüfen\")", bold=True)
+    for c_ in ("F", "I"):
+        ws.conditional_formatting.add(f"{c_}{RR0}:{c_}{RRL}", CellIsRule(operator="greaterThan", formula=["0.5"], font=Font(name=F, size=10, color="0A7A0A")))
+        ws.conditional_formatting.add(f"{c_}{RR0}:{c_}{RRL}", CellIsRule(operator="lessThan", formula=["-0.5"], font=Font(name=F, size=10, color="C0392B")))
+    ws.column_dimensions["A"].width = 40
+    for c_ in "BCDEFGHIJ":
+        ws.column_dimensions[c_].width = 15
+
+    # ------------------------------------------------------------------ Soll-Herleitung
+    ws = S["Soll-Herleitung"]
+    title(ws, "Herleitung der Zielgewichte",
+          f"Aktienteil je Region: Mittel aus Norwegischem Staatsfonds und Portfolio One (Stand {cfg.get('referenz_stand', '')}), normiert; danach × Zielquote.")
+    head(ws, 4, ["Region", "Norweg. Staatsfonds", "Portfolio One", "Mittel", "Mittel normiert",
+                 "Festgelegt (Aktienteil)", "Abweichung (Pp.)", "Soll im Gesamtdepot"])
+    akt = [i for i, p in enumerate(P) if p.get("referenz")]
+    HR = 5
+    HL_ = HR + len(akt) - 1
+    for k, i in enumerate(akt):
+        r = HR + k
+        put(ws, f"A{r}", f"={prow(i, 'E')}", f_link)
+        put(ws, f"B{r}", f"={prow(i, 'J')}", f_link, PCT)
+        put(ws, f"C{r}", f"={prow(i, 'K')}", f_link, PCT)
+        put(ws, f"D{r}", f"=(B{r}+C{r})/2", fmt=PCT)
+        put(ws, f"E{r}", f"=D{r}/$D${HL_ + 1}", fmt=PCT)
+        put(ws, f"F{r}", f"={prow(i, 'F')}/Zielquote", fmt=PCT)
+        put(ws, f"G{r}", f"=(F{r}-E{r})*100", fmt='+0.0;-0.0;0.0')
+        put(ws, f"H{r}", f"={prow(i, 'F')}", f_link, PCT)
+    put(ws, f"A{HL_ + 1}", "Summe", bold=True)
+    for c_ in "BCDEFH":
+        put(ws, f"{c_}{HL_ + 1}", f"=SUM({c_}{HR}:{c_}{HL_})", fmt=PCT, bold=True)
+    put(ws, f"A{HL_ + 3}", "Die Referenzanteile decken nicht 100 % ab (Summe Mittel), deshalb wird auf den Aktienteil normiert.", f_note)
+    ws.column_dimensions["A"].width = 28
+    for c_ in "BCDEFGH":
+        ws.column_dimensions[c_].width = 16
 
     # ------------------------------------------------------------------ Kovarianz
     ws = S["Kovarianz"]
