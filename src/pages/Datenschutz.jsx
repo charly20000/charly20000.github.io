@@ -88,72 +88,39 @@ export default function Datenschutz() {
           </p>
         </Section>
 
-        <Section title="4. Hosting — Vercel">
+        <Section title="4. Hosting — GitHub Pages">
           <p>
-            Diese Website wird bei Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA
-            („Vercel") gehostet. Beim Aufruf dieser Website werden durch Vercel automatisch
-            Informationen in Server-Logfiles erfasst, die Ihr Browser übermittelt. Hierzu gehören
-            insbesondere: IP-Adresse des zugreifenden Geräts, Datum und Uhrzeit des Zugriffs, Name
-            und URL der abgerufenen Seite, übertragene Datenmenge, Browser-Typ und -Version,
-            Betriebssystem sowie Referrer-URL.
+            Diese Website wird über GitHub Pages bereitgestellt, einen Dienst der GitHub, Inc.,
+            88 Colin P. Kelly Jr. St., San Francisco, CA 94107, USA („GitHub"). Beim Aufruf der
+            Website verarbeitet GitHub technisch notwendige Daten, die Ihr Browser übermittelt,
+            insbesondere die IP-Adresse des zugreifenden Geräts, Datum und Uhrzeit des Zugriffs,
+            die abgerufene Seite sowie Browser- und Geräteinformationen. Ich selbst habe keinen
+            Zugriff auf diese Daten und führe keine eigene Auswertung durch.
           </p>
           <p>
-            Diese Daten werden zur Sicherstellung eines störungsfreien Betriebs der Website und zur
-            Erkennung und Abwehr von Angriffen erhoben. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f
-            DSGVO (berechtigtes Interesse an einem sicheren und funktionsfähigen Webauftritt).
+            Die Verarbeitung dient der Auslieferung der Website, ihrer Stabilität und der Abwehr
+            von Angriffen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse
+            an einem sicheren und funktionsfähigen Webauftritt).
           </p>
           <p>
-            Vercel verarbeitet Daten auch in den USA. Vercel ist unter dem EU-U.S. Data Privacy
-            Framework zertifiziert und verpflichtet sich zur Einhaltung eines angemessenen
-            Datenschutzniveaus. Die Zertifizierung kann unter{" "}
+            GitHub verarbeitet Daten auch in den USA. GitHub ist nach dem EU-U.S. Data Privacy
+            Framework zertifiziert; die Zertifizierung kann unter{" "}
             <a href="https://www.dataprivacyframework.gov/list" target="_blank" rel="noopener noreferrer" style={linkStyle}>
               dataprivacyframework.gov
             </a>{" "}
-            eingesehen werden. Zusätzlich wurden Standardvertragsklauseln gemäß Art. 46 Abs. 2
-            lit. c DSGVO vereinbart. Weitere Informationen:{" "}
-            <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={linkStyle}>
-              Vercel Privacy Policy
-            </a>,{" "}
-            <a href="https://vercel.com/legal/dpa" target="_blank" rel="noopener noreferrer" style={linkStyle}>
-              Vercel DPA
+            eingesehen werden. Weitere Informationen:{" "}
+            <a href="https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer" style={linkStyle}>
+              GitHub-Datenschutzerklärung
             </a>.
+          </p>
+          <p>
+            Auf dieser Website werden keine Analyse- oder Statistikdienste eingesetzt. Das gilt
+            auch für das Musterdepot-Dashboard unter /musterdepot/: Es ist eine statische Seite,
+            lädt keine Inhalte von Dritten und speichert keine Daten im Browser.
           </p>
         </Section>
 
-        <Section title="5. Webanalyse — Vercel Analytics">
-          <p>
-            Diese Website nutzt Vercel Web Analytics, einen Dienst der Vercel Inc. Vercel Web
-            Analytics sammelt und speichert nach eigenen Angaben ausschließlich aggregierte Daten,
-            die keine Identifizierung oder Re-Identifizierung einzelner Nutzer ermöglichen. Es
-            werden keine Cookies gesetzt und keine persönlichen Identifikatoren erfasst.
-          </p>
-          <p>
-            Es werden lediglich Informationen wie Seitenaufrufe, Referrer und allgemeine
-            Geräteinformationen aggregiert ausgewertet. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f
-            DSGVO. Weitere Informationen:{" "}
-            <a href="https://vercel.com/docs/analytics/privacy-policy" target="_blank" rel="noopener noreferrer" style={linkStyle}>
-              Vercel Analytics Privacy Policy
-            </a>.
-          </p>
-        </Section>
-
-        <Section title="6. Performance-Analyse — Vercel Speed Insights">
-          <p>
-            Zusätzlich wird Vercel Speed Insights eingesetzt, ein Dienst der Vercel Inc. zur
-            Messung und Verbesserung der Ladegeschwindigkeit. Dabei werden Web-Vitals-Metriken
-            (z.{"\u00A0"}B. Largest Contentful Paint, First Input Delay, Cumulative Layout Shift)
-            erhoben. Die Daten werden aggregiert verarbeitet und nicht mit anderen
-            personenbezogenen Daten zusammengeführt.
-          </p>
-          <p>
-            Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Weitere Informationen:{" "}
-            <a href="https://vercel.com/docs/speed-insights/privacy-policy" target="_blank" rel="noopener noreferrer" style={linkStyle}>
-              Vercel Speed Insights Privacy &amp; Compliance
-            </a>.
-          </p>
-        </Section>
-
-        <Section title="7. Schriftarten">
+        <Section title="5. Schriftarten">
           <p>
             Diese Website nutzt lokal gehostete Schriftarten (DM Sans, Space Mono, DM Mono).
             Die Schriftdateien werden direkt von diesem Server ausgeliefert. Es findet keine
@@ -162,7 +129,7 @@ export default function Datenschutz() {
           </p>
         </Section>
 
-        <Section title="8. Cookies">
+        <Section title="6. Cookies">
           <p>
             Diese Website verwendet derzeit keine Cookies und setzt keine Tracking-Technologien
             ein, die eine Einwilligung nach § 25 TDDDG erfordern. Sollte sich dies in Zukunft
@@ -170,7 +137,7 @@ export default function Datenschutz() {
           </p>
         </Section>
 
-        <Section title="9. Ihre Rechte">
+        <Section title="7. Ihre Rechte">
           <p>Ihnen stehen folgende Rechte gemäß DSGVO zu:</p>
           <p>
             <strong>Auskunftsrecht (Art. 15 DSGVO):</strong> Sie haben das Recht, Auskunft über
@@ -212,14 +179,14 @@ export default function Datenschutz() {
           </p>
         </Section>
 
-        <Section title="10. Änderungen dieser Datenschutzerklärung">
+        <Section title="8. Änderungen dieser Datenschutzerklärung">
           <p>
             Diese Datenschutzerklärung wird bei Bedarf aktualisiert, um sie an geänderte Rechtslage
             oder Änderungen der Datenverarbeitung anzupassen. Die jeweils aktuelle Fassung ist stets
             auf dieser Seite abrufbar.
           </p>
           <p style={{ color: "#999", fontSize: 12, marginTop: 8, fontFamily: "'Space Mono', monospace" }}>
-            Stand: März 2026
+            Stand: November 2026
           </p>
         </Section>
       </div>
