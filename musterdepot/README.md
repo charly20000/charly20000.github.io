@@ -13,8 +13,8 @@ Monatliches Kapitalanlagereporting und Risikoüberwachung für ein fiktives Depo
 | Gegenrechnung | `musterdepot/gegenrechnung.py` | Rechnet 37 Kennzahlen und Summenregeln unabhängig nach, bricht bei Abweichung ab |
 | Seite | `musterdepot/template.html` + `build_site.py` | → `public/musterdepot/index.html`, erreichbar unter christoph-zapp.de/musterdepot/ |
 | Excel-Fassung | `musterdepot/build_excel.py` | → `public/musterdepot/Musterdepot_Zapp.xlsx`, dieselbe Rechnung als Formeln |
-| Warn-Mail | `musterdepot/alerts.py` | Mail nur bei *neu* ausgelösten Regeln (Status in `musterdepot/data/warnstatus.json`) |
-| Automatik | `.github/workflows/musterdepot.yml` | Montags und am 2. jedes Monats: rechnen → prüfen → bauen → Mail → committen. Danach startet `deploy.yml` und veröffentlicht die Seite. |
+| Warn-Mail (optional, nicht aktiv) | `musterdepot/alerts.py` | Würde eine Mail bei *neu* ausgelösten Regeln senden. Im Workflow bewusst nicht eingebunden. |
+| Automatik | `.github/workflows/musterdepot.yml` | Montags und am 2. jedes Monats: rechnen → prüfen → bauen → committen. Danach startet `deploy.yml` und veröffentlicht die Seite. |
 
 ## Lokal ausprobieren
 
@@ -25,21 +25,11 @@ python depot.py --quelle simuliert
 python gegenrechnung.py
 python build_site.py
 python build_excel.py
-python alerts.py          # ohne Zugangsdaten nur Trockenlauf
 ```
 
 ## Einmalig einrichten
 
-*Settings → Secrets and variables → Actions*, folgende Secrets anlegen:
-- `SMTP_HOST` = `posteo.de`
-- `SMTP_PORT` = `587`
-- `SMTP_USER` = Posteo-Adresse
-- `SMTP_PASS` = Posteo-Passwort
-- `MAIL_TO` = Empfängeradresse
-
-Danach unter *Actions → Musterdepot aktualisieren → Run workflow* einmal manuell starten.
-
-Ohne Secrets läuft alles, nur die Mail wird als Trockenlauf ins Protokoll geschrieben.
+Nichts nötig. Optional unter *Actions → Musterdepot aktualisieren → Run workflow* einmal manuell starten.
 
 ## Rechtliches
 
