@@ -8,11 +8,11 @@ Monatliches Kapitalanlagereporting und Risikoüberwachung für ein fiktives Depo
 
 | Baustein | Datei | Inhalt |
 |---|---|---|
-| Konfiguration | `musterdepot/config.json` | Positionen (erfundene Musterfonds), Soll-Gewichte, laufende Kosten, Duration, Toleranzband, Warnschwellen, Stressszenarien |
-| Rechenkern | `musterdepot/depot.py` | Depot fortschreiben inkl. Rebalancing, Kennzahlen, VaR (historisch + Monte Carlo), Expected Shortfall, Stresstests, Warnregeln, Einzelanalyse je Fonds → `musterdepot/site/data.json` (nicht im Repo) |
+| Konfiguration | `musterdepot/config.json` | Positionen (erfundene Musterfonds), Soll-Gewichte mit Referenzwerten (Norweg. Staatsfonds, Portfolio One), laufende Kosten, Ausschüttungsannahmen, Duration, Toleranzband, Warnschwellen, Stressszenarien |
+| Rechenkern | `musterdepot/depot.py` | Depot fortschreiben inkl. Rebalancing, Kennzahlen, VaR (historisch + Monte Carlo), Expected Shortfall, Stresstests, Warnregeln, Einzelanalyse je Fonds, Soll-Herleitung, Rebalancing-Rechner (`umschichten`: „voll auf Soll“ oder „nur Geldfluss verteilen“) → `musterdepot/site/data.json` (nicht im Repo) |
 | Gegenrechnung | `musterdepot/gegenrechnung.py` | Rechnet 37 Kennzahlen und Summenregeln unabhängig nach, bricht bei Abweichung ab |
 | Seite | `musterdepot/template.html` + `build_site.py` | → `public/musterdepot/index.html`, erreichbar unter christoph-zapp.de/musterdepot/ |
-| Excel-Fassung | `musterdepot/build_excel.py` | → `public/musterdepot/Musterdepot_Zapp.xlsx`, dieselbe Rechnung als Formeln |
+| Excel-Fassung | `musterdepot/build_excel.py` | → `public/musterdepot/Musterdepot_Zapp.xlsx`, dieselbe Rechnung als Formeln, inkl. Blätter Rebalancing-Rechner und Soll-Herleitung |
 | Warn-Mail (optional, nicht aktiv) | `musterdepot/alerts.py` | Würde eine Mail bei *neu* ausgelösten Regeln senden. Im Workflow bewusst nicht eingebunden. |
 | Automatik | `.github/workflows/musterdepot.yml` | Montags und am 2. jedes Monats: rechnen → prüfen → bauen → committen. Danach startet `deploy.yml` und veröffentlicht die Seite. |
 

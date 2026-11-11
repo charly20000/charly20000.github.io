@@ -212,6 +212,9 @@ def allokation(cfg: dict, werte: pd.DataFrame) -> list[dict]:
         out.append({"id": p["id"], "name": p["name"], "kennung": p["kennung"], "klasse": p["klasse"],
                     "region": p["region"], "soll": p["soll"], "ist": round(ist, 4),
                     "ter": p["ter"], "duration": p.get("duration"),
+                    "ausschuettung": p.get("ausschuettung", 0.0),
+                    "kosten_eur": round(float(letzte[p["id"]]) * p["ter"], 0),
+                    "ausschuettung_eur": round(float(letzte[p["id"]]) * p.get("ausschuettung", 0.0), 0),
                     "abweichung_pp": round((ist - p["soll"]) * 100, 2),
                     "abweichung_rel": round(abw_rel, 4), "status": status,
                     "wert": round(float(letzte[p["id"]]), 0),
@@ -298,6 +301,50 @@ def einzelanalyse(cfg: dict, kurse: pd.DataFrame, werte: pd.DataFrame, vorher: p
             "depot_renditen_summe_pp": round(float(depot_r.sum() * 100), 2)}
 
 
+def umschichten(werte: list[float], soll: list[float], geldfluss: float, modus: str = "voll") -> list[float]:
+    """Kauf (+) / Verkauf (−) je Position fuer eine Einzahlung (+) oder Entnahme (−).
+
+    voll:     alle Positionen auf Soll bringen: (Depotwert + Geldfluss) × Soll − Wert
+              (wie Spalte "Neuer Invest" im Excel-Tool)
+    geldfluss: nur den Geldfluss verteilen, ohne Gegenbuchungen: Einzahlungen
+              fuellen untergewichtete Positionen auf, Entnahmen kommen aus
+              uebergewichteten; Rest anteilig nach Soll.
+    """
+    gesamt = sum(werte) + geldfluss
+    ziel = [gesamt * s_ for s_ in soll]
+    if modus == "voll":
+        return [z - w for z, w in zip(ziel, werte)]
+    if geldfluss >= 0:
+        luecke = [max(0.0, z - w) for z, w in zip(ziel, werte)]
+        summe = sum(luecke)
+        if summe == 0:
+            return [geldfluss * s_ for s_ in soll]
+        if geldfluss <= summe:
+            return [geldfluss * l / summe for l in luecke]
+        return [l + (geldfluss - summe) * s_ for l, s_ in zip(luecke, soll)]
+    ueber = [max(0.0, w - z) for z, w in zip(ziel, werte)]
+    summe = sum(ueber)
+    if summe == 0:
+        return [geldfluss * s_ for s_ in soll]
+    if -geldfluss <= summe:
+        return [geldfluss * u / summe for u in ueber]
+    return [-u + (geldfluss + summe) * s_ for u, s_ in zip(ueber, soll)]
+
+
+def soll_herleitung(cfg: dict) -> dict:
+    """Aktien-Soll je Region: Mittel aus zwei Referenzportfolios, normiert, gegen Festlegung."""
+    aktien = [p for p in cfg["positionen"] if p.get("referenz")]
+    mittel = {p["id"]: (p["referenz"]["norwegen"] + p["referenz"]["portfolio_one"]) / 2 for p in aktien}
+    summe = sum(mittel.values())
+    zq = cfg["zielquote_aktien"]
+    zeilen = [{"id": p["id"], "region": p["region"], "norwegen": p["referenz"]["norwegen"] / 100,
+               "portfolio_one": p["referenz"]["portfolio_one"] / 100, "mittel": round(mittel[p["id"]] / 100, 4),
+               "mittel_normiert": round(mittel[p["id"]] / summe, 4),
+               "soll_aktienteil": round(p["soll"] / zq, 4), "soll_gesamt": p["soll"]} for p in aktien]
+    return {"stand": cfg.get("referenz_stand"), "quellen": cfg.get("referenz_quellen"),
+            "abdeckung_mittel": round(summe / 100, 4), "zeilen": zeilen}
+
+
 # ---------------------------------------------------------------------------
 def berechnen(quelle: str, bis: str | None = None) -> dict:
     cfg = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
@@ -311,7 +358,7 @@ def berechnen(quelle: str, bis: str | None = None) -> dict:
     ids_aktien = [p["id"] for p in cfg["positionen"] if p["klasse"] == "Aktien"]
     aktien = werte[ids_aktien].sum(axis=1)
     return {
-        "meta": {"name": cfg["name"], "stand": kurse.index[-1].strftime("%Y-%m-%d"),
+        "meta": {"name": cfg["name"], "anleger": "Privatanleger", "stand": kurse.index[-1].strftime("%Y-%m-%d"),
                  "start": kurse.index[0].strftime("%Y-%m-%d"), "startkapital": cfg["startkapital"],
                  "quelle": "Simulierte Testdaten" if quelle == "simuliert" else "Monatsendkurse (CSV)",
                  "testdaten": quelle == "simuliert", "zielquote_aktien": cfg["zielquote_aktien"],
@@ -329,6 +376,8 @@ def berechnen(quelle: str, bis: str | None = None) -> dict:
         "rebalancing": [{k2: v2 for k2, v2 in e.items() if k2 != "trades"} for e in events],
         "warnungen": warn,
         "einzel": einzelanalyse(cfg, kurse, werte, vorher, renditen, events),
+        "soll_herleitung": soll_herleitung(cfg),
+        "annahmen": cfg.get("annahmen", {}),
     }
 
 

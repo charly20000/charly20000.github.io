@@ -285,12 +285,12 @@ export default function Portfolio() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <div style={{ fontSize: 17, fontWeight: 600, color: "#111" }}>Musterdepot-Monitoring</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#999", marginTop: 4, letterSpacing: "0.05em" }}>Kapitalanlagereporting und Risikoüberwachung für ein fiktives 1-Mio.-€-Depot</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#999", marginTop: 4, letterSpacing: "0.05em" }}>Kapitalanlagereporting und Risikoüberwachung für das 1-Mio.-€-Depot eines fiktiven Privatanlegers</div>
               </div>
               <span style={{ fontSize: 10, fontFamily: "'Space Mono', monospace", letterSpacing: "0.1em", textTransform: "uppercase", color: "#cc7700", background: "rgba(204,119,0,0.08)", padding: "4px 10px", whiteSpace: "nowrap" }}>Prototyp</span>
             </div>
             <p style={{ fontSize: 13, color: "#666", lineHeight: 1.7, marginTop: 12, marginBottom: 14 }}>
-              Monatliches Reporting für ein Musterdepot mit 80 % Aktien und 20 % Anleihen aus neun erfundenen Fonds. Gezeigt werden Soll-Ist-Allokation mit Toleranzband und Rebalancing-Regel, Rendite- und Risikokennzahlen, Value at Risk (historisch und Monte Carlo), Expected Shortfall und Stresstests. Dazu gibt es eine Einzelanalyse je Fonds mit Rendite- und Risikobeitrag. Ein zeitgesteuerter GitHub-Actions-Lauf rechnet jeden Monat neu und prüft wöchentlich vier Warnregeln. Eine unabhängige Gegenrechnung prüft jeden Lauf. Alle Berechnungen gibt es zusätzlich als Excel-Arbeitsmappe mit Formeln. Derzeit läuft das Depot mit simulierten Kursen.
+              Monatliches Reporting für ein Privatanleger-Depot mit 80 % Aktien und 20 % Anleihen aus neun erfundenen Fonds. Die Zielgewichte sind aus zwei Referenzportfolios hergeleitet. Gezeigt werden Soll-Ist-Allokation mit Toleranzband, Rendite- und Risikokennzahlen, Value at Risk (historisch und Monte Carlo), Expected Shortfall und Stresstests. Dazu kommen eine Einzelanalyse je Fonds mit Rendite- und Risikobeitrag, Kosten und Ausschüttungen sowie ein Rebalancing-Rechner für Ein- und Auszahlungen. Ein zeitgesteuerter GitHub-Actions-Lauf rechnet jeden Monat neu und prüft wöchentlich vier Warnregeln. Eine unabhängige Gegenrechnung prüft jeden Lauf. Alle Berechnungen gibt es zusätzlich als Excel-Arbeitsmappe mit Formeln. Derzeit läuft das Depot mit simulierten Kursen.
             </p>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
               {["Python", "pandas", "Monte Carlo", "GitHub Actions", "Excel-Formeln", "Risikocontrolling"].map((tag) => (

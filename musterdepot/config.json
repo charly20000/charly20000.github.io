@@ -1,5 +1,5 @@
 {
-  "name": "Musterdepot 80/20",
+  "name": "Musterdepot 80/20 (Privatanleger)",
   "startkapital": 1000000,
   "startdatum": "2021-11-30",
   "risikofreier_zins_pa": 0.02,
@@ -37,7 +37,12 @@
       "region": "Nordamerika",
       "soll": 0.42,
       "ter": 0.001,
-      "kennung": "MF-AK-NA"
+      "kennung": "MF-AK-NA",
+      "ausschuettung": 0.0135,
+      "referenz": {
+        "norwegen": 41.4,
+        "portfolio_one": 49.4
+      }
     },
     {
       "id": "EU",
@@ -46,7 +51,12 @@
       "region": "Europa",
       "soll": 0.144,
       "ter": 0.001,
-      "kennung": "MF-AK-EU"
+      "kennung": "MF-AK-EU",
+      "ausschuettung": 0.0304,
+      "referenz": {
+        "norwegen": 13.6,
+        "portfolio_one": 8.65
+      }
     },
     {
       "id": "JP",
@@ -55,7 +65,12 @@
       "region": "Japan",
       "soll": 0.066,
       "ter": 0.0015,
-      "kennung": "MF-AK-JP"
+      "kennung": "MF-AK-JP",
+      "ausschuettung": 0.021,
+      "referenz": {
+        "norwegen": 6.6,
+        "portfolio_one": 7.7
+      }
     },
     {
       "id": "APX",
@@ -64,7 +79,12 @@
       "region": "Asien-Pazifik ohne Japan",
       "soll": 0.022,
       "ter": 0.0015,
-      "kennung": "MF-AK-PX"
+      "kennung": "MF-AK-PX",
+      "ausschuettung": 0.0424,
+      "referenz": {
+        "norwegen": 4.9,
+        "portfolio_one": 1.7
+      }
     },
     {
       "id": "EM",
@@ -73,7 +93,12 @@
       "region": "Schwellenländer",
       "soll": 0.084,
       "ter": 0.0022,
-      "kennung": "MF-AK-EM"
+      "kennung": "MF-AK-EM",
+      "ausschuettung": 0.0318,
+      "referenz": {
+        "norwegen": 9.9,
+        "portfolio_one": 14.6
+      }
     },
     {
       "id": "SC",
@@ -82,7 +107,12 @@
       "region": "Small Caps weltweit",
       "soll": 0.064,
       "ter": 0.0035,
-      "kennung": "MF-AK-SC"
+      "kennung": "MF-AK-SC",
+      "ausschuettung": 0.0,
+      "referenz": {
+        "norwegen": 10.0,
+        "portfolio_one": 9.3
+      }
     },
     {
       "id": "GOV",
@@ -92,7 +122,8 @@
       "soll": 0.05,
       "ter": 0.0005,
       "duration": 0.5,
-      "kennung": "MF-RE-GK"
+      "kennung": "MF-RE-GK",
+      "ausschuettung": 0.02
     },
     {
       "id": "AGG",
@@ -102,7 +133,8 @@
       "soll": 0.075,
       "ter": 0.0035,
       "duration": 4.0,
-      "kennung": "MF-RE-GM"
+      "kennung": "MF-RE-GM",
+      "ausschuettung": 0.03
     },
     {
       "id": "CORP",
@@ -112,7 +144,16 @@
       "soll": 0.075,
       "ter": 0.0009,
       "duration": 4.5,
-      "kennung": "MF-RE-UA"
+      "kennung": "MF-RE-UA",
+      "ausschuettung": 0.032
     }
-  ]
+  ],
+  "referenz_stand": "Februar 2023, eigene Zusammenstellung",
+  "referenz_quellen": [
+    "Norwegischer Staatsfonds",
+    "Portfolio One"
+  ],
+  "annahmen": {
+    "ausschuettung": "Ausschüttungsrenditen: Aktienfonds angelehnt an Ausschüttungen vergleichbarer ETFs 2022, Anleihefonds geschätzt (Annahme)."
+  }
 }
